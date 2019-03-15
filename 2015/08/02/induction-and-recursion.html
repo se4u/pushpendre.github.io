@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Induction and Recursion</title>
+  <meta name="description" content="  The following article summarizes the arguments presented in the book “A mathematical introduction to logic”(2001 edition) by Herbert Enderton on the topic ...">
+
+  <link rel="stylesheet" href="/~prastog3/css/main.css">
+  <link rel="canonical" href="/~prastog3/2015/08/02/induction-and-recursion.html">
+  <link rel="alternate" type="application/rss+xml" title="Pushpendre Rastogi" href="/~prastog3/feed.xml" />
+  <script type="text/javascript"
+    src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+    TeX: { equationNumbers: { autoNumber: "AMS" },
+    Macros : {rs: ["#1", 1],
+              rv: ["\\boldsymbol{#1}", 1],
+              rm: ["\\boldsymbol{#1}", 1],
+              us: ["\\mathsf{#1}", 1],
+              uv: ["\\mathbf{#1}", 1],
+              um: ["\\mathbf{#1}", 1],
+              ks: ["\\mathtt{#1}", 1],
+              kv: ["\\mathtt{#1}", 1],
+              km: ["\\mathtt{#1}", 1]}}});
+  </script>
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <img class="site-title" src="/~prastog3/res/header.png" height="100" style="PADDING-RIGHT: 10px">
+    <a class="site-title" href="/~prastog3/">Pushpendre Rastogi</a>
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/~prastog3/mvlsa/">Multiview LSA</a>
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Induction and Recursion</h1>
+    <p class="post-meta">Aug 2, 2015</p>
+  </header>
+
+  <article class="post-content">
+    <div class="note">
+  <p>The following article summarizes the arguments presented in the book “A mathematical introduction to logic”(2001 edition) by Herbert Enderton on the topic of Induction and Recursion in Section 1.4. I have omitted the proofs and mainly placed the theorems in context.</p>
+</div>
+<p><script type="math/tex">\newcommand{\Epsilon}{\mathcal{E}}</script></p>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>The section on Induction analyzes the situation where one wants to construct a closure $C$ from a set of generating elements $B \subseteq U$($U$ is the universe). This section shows two seemingly different ways to doing so; 1) Top Down, 2) Bottom Up, that actually turn out to be the same under closer scrutiny. The entire section is devoted to proving that Top Down and Bottom Up inductions result in the same sets.</p>
+
+<p>The section on recursion builds upon the previous section and presents sufficient conditions for the validity of constraints or rules that state how to compute the following:</p>
+
+<ol>
+  <li>$\bar{h}(x)$ for $x \in B$.</li>
+  <li>$\bar{h}(f(x, y))$ making use of $\bar{h}(x), \bar{h}(y)$.</li>
+  <li>$\bar{h}(g(x))$ making use of $\bar{h}(x)$.</li>
+</ol>
+
+<p>By validity we mean that the computation rules should not be self contradictory and that the resultant object should be a valid function. If we consolidate the rules for computing $\bar{h}(x)$ for $x \in B$ and call the consolidated rules the function $h$ and similarly consolidate the rules in 2. and 3. and call them $F$ and $G$ respectively then it is easy to see that if $\bar{h}$ exists then it is uniquely determined by $h, F, G$. The hard part really is proving that $h, F, G$ must be “valid” (not run into contradictions) and one sufficient condition for that is that $C$ is “freely-generated” from $B$ by $f$ and $g$.</p>
+
+<p>The fact that “free-generation” of $C$ is sufficient for the validity of the existence of the extension $\bar{h}$ is presented as the “Recursion Theorem” and then this theorem is used to prove that the $\bar{v}$ is a valid extension of the (valuation of sentential symbols)($v$) to the valuation of wffs, where the wffs are syntactically generated using composition operations $\Epsilon_{X}$:</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\begin{align*}
+\Epsilon_{\neg}(\alpha) &= (\neg{\alpha}) \\
+\Epsilon_{\land}(\alpha, \beta) &= (\alpha \land \beta)\\
+\Epsilon_{\lor}(\alpha, \beta) &= (\alpha \lor \beta)\\
+\Epsilon_{\rightarrow}(\alpha, \beta) &= (\alpha \rightarrow \beta)\\
+\Epsilon_{\leftrightarrow}(\alpha, \beta) &= (\alpha \leftrightarrow \beta)
+\end{align*} %]]></script>
+
+<p style="text-align: center;">AND, $\bar{v}$ is generated as follows</p>
+
+<script type="math/tex; mode=display">\begin{equation*}
+\bar{v}((\neg(\alpha))) = \text{ T if } \bar{v}(\alpha) = \text{ F else F} \text{and so on... }
+\end{equation*}</script>
+
+<div class="note">
+  <p>The parenthesis are extremely important. They make strings behave like ordered pairs. In fact every wff starts with “(“. and $\neg A \land B$ is actually $((\neg A) \land B)$.</p>
+</div>
+
+<p>That is because in the “Unique Readability Theorem” we prove that not only do the 5 functions $\Epsilon_{X}$ generate $C$ but their restrictions to the set of wffs:</p>
+
+<ol>
+  <li>Have disjoint ranges.</li>
+  <li>Are one-to-one.</li>
+</ol>
+
+<h2 id="induction">Induction</h2>
+
+<p>Imagine that you are given a set $U$ and that you then want to “generate” a closure of $B$ (which is a subset of $U$) from operations like $f, g$. For concreteness’ sake $f$ is binary and $g$ is unary. I.e. the type signatures of $f$ and $g$ are:</p>
+
+<script type="math/tex; mode=display">\begin{equation*}
+ f :: U \times U \rightarrow U \\
+ g :: U \times U
+\end{equation*}</script>
+
+<p>Now there are two ways of “inducing” the “closure” of $B$ that we call $ C^{<em>} $ and $ C_{</em>} $.</p>
+
+<h3 id="top-down-induction">Top Down Induction</h3>
+
+<ol>
+  <li>Say that a subset $S$ of $U$ is “closed” under $f, g$ if $x, y \in S \implies f(x, y), g(x) \in S$.</li>
+  <li>Say that a subset $S$ of $U$ is “inductive” if $B \subseteq S$ and $S$ is closed.</li>
+  <li>Let $C^{*}$ = intersection of all inductive subsets of $U$.</li>
+</ol>
+
+<h3 id="bottom-up-induction-constructive-approach">Bottom Up Induction (Constructive approach)</h3>
+
+<ol>
+  <li>Define a construction sequence to be a finite sequence $x_1, \ldots, x_n$ of elements of $U$ such that $\forall i \le n$ at least one of the following is true
+    <ul>
+      <li>$x_i \in B$</li>
+      <li>$x_i = f(x_j, x_k) \text{ for some } j &lt; i, k &lt; i$</li>
+      <li>$x_i = g(x_j) \text{ for some } j &lt; i$</li>
+    </ul>
+  </li>
+  <li>$C_{*}$ is the set of all points $x$ such that some construction sequence ends with $x$.</li>
+</ol>
+
+<h2 id="recursion">Recursion</h2>
+
+<h3 id="freely-generated">Freely Generated</h3>
+
+<p>$C$ is “freely generated” from $B$ by $f, g$ iff in additional to the fact that $C$ is generated from $B$; $f_C, g_C$, the restrictions of $f, g$ to $C$ meet the following condition:</p>
+
+<ol>
+  <li>$f_C, g_C$ are one-to-one.</li>
+  <li>Range of $f_C, g_C, B$ are disjoint from each other (pairwise disjoint).</li>
+</ol>
+
+<h3 id="recursion-theorem">Recursion Theorem</h3>
+
+<div class="theorem">
+  <p>Assume that the subset $C$ of $U$ is freely generated from $B$ by $f, g$ where:</p>
+
+  <script type="math/tex; mode=display">\begin{equation*}
+f :: U \times U \rightarrow U \\
+g :: U \rightarrow U
+\end{equation*}</script>
+
+  <p>Further assume that $V$ is a set and $F, G, h$ are functions such that:</p>
+
+  <script type="math/tex; mode=display">\begin{equation*}
+h :: B \rightarrow V \\
+F :: V \times V \rightarrow V \\
+G :: V \rightarrow V
+\end{equation*}</script>
+
+  <p>Then there is a unique function $\bar{h} :: C \rightarrow V $ such that</p>
+
+  <ol>
+    <li>For $x \in B, \bar{h}(x) = h(x)$</li>
+    <li>For $x, y \in C$ :
+      <ol>
+        <li>$\bar{h}(f(x, y)) = F(\bar{h}(x), \bar{h}(y)$</li>
+        <li>$\bar{h}(g(x)) = F(\bar{h}(x))$</li>
+      </ol>
+    </li>
+  </ol>
+
+  <div class="note">
+    <p>It is incredible that just the free generation of $C$ from $f, g, B$ is sufficient for the validity of $\bar{h}$. The fact that it is not dependent on $h, F, G$ at all is incredible. Don’t be fooled that $F, G$ are named similar to $f, g$ they are completely different and unrelated functions.</p>
+
+    <p>To quote: Algebraically, the conclusion of this theorem says that any map $h$ of $B$ into $V$ can be extended to a homomorphism $\bar{h}$ from $C$ (with operations $f, g$) into $V$ (with operations $F, G$).</p>
+  </div>
+</div>
+
+<div class="fun">
+  <p>An advertisement for a tennis magazine states, “If I’m not playing tennis, then I’m watching tennis. And if I’m not watching tennis, I’m reading about tennis.” We can assume that the speaker cannot do more than one of these activities at a time. What is the speaker doing?</p>
+</div>
+
+  </article>
+  
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+  <div class="wrapper">
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li>Pushpendre Rastogi</li>
+          <li><a href="mailto:pushpendre@gmail.com">pushpendre@gmail.com</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col  footer-col-2">
+        <ul class="social-media-list">
+          
+          <li>
+            <a href="https://github.com/se4u">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">se4u</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+  </body>
+
+</html>

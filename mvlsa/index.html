@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Multiview LSA</title>
+  <meta name="description" content="Web page of Pushpendre Rastogi
+">
+
+  <link rel="stylesheet" href="/~prastog3/css/main.css">
+  <link rel="canonical" href="/~prastog3/mvlsa/">
+  <link rel="alternate" type="application/rss+xml" title="Pushpendre Rastogi" href="/~prastog3/feed.xml" />
+  <script type="text/javascript"
+    src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+    TeX: { equationNumbers: { autoNumber: "AMS" },
+    Macros : {rs: ["#1", 1],
+              rv: ["\\boldsymbol{#1}", 1],
+              rm: ["\\boldsymbol{#1}", 1],
+              us: ["\\mathsf{#1}", 1],
+              uv: ["\\mathbf{#1}", 1],
+              um: ["\\mathbf{#1}", 1],
+              ks: ["\\mathtt{#1}", 1],
+              kv: ["\\mathtt{#1}", 1],
+              km: ["\\mathtt{#1}", 1]}}});
+  </script>
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <img class="site-title" src="/~prastog3/res/header.png" height="100" style="PADDING-RIGHT: 10px">
+    <a class="site-title" href="/~prastog3/">Pushpendre Rastogi</a>
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/~prastog3/mvlsa/">Multiview LSA</a>
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Multiview LSA</h1>
+  </header>
+
+  <article class="post-content">
+    <h1 id="multiview-lsa">Multiview LSA</h1>
+<p>This is the companion code for the paper:
+<a href="http://www.cs.jhu.edu/~prastog3/mvlsa/mvlsa.pdf">Multiview LSA: Representation Learning Via Generalized CCA</a>, <a href="http://www.cs.jhu.edu/~prastog3">Pushpendre Rastogi</a>, <a href="http://www.cs.jhu.edu/~vandurme">Benjamin Van Durme</a> and <a href="http://www.cs.jhu.edu/~raman">Raman Arora</a>, NAACL(2015).</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@conference{rastogi2015multiview,
+  Author = {Pushpendre Rastogi, Benjamin {Van Durme} and Raman Arora},
+  Booktitle = {Proceedings of NAACL},
+  Keywords = {mvlsa,multiview lsa,mvppdb},
+  Title = {Multiview LSA: Representation Learning Via Generalized CCA},
+  Year = {2015}
+}
+</code></pre></div></div>
+
+<p><strong>NOTES:</strong></p>
+
+<ol>
+  <li>
+    <p>We have made available the best performing embeddings in both /mat/ and /svmlight/ formats
+(Table 9: column <em>MVLSA Combined</em>) at
+<a href="http://dx.doi.org/10.5281/zenodo.16710"><img src="https://zenodo.org/badge/doi/10.5281/zenodo.16710.svg" alt="DOI" /></a>. Download
+the file <a href="https://zenodo.org/record/16710/files/combined_embedding_0.mat">combined_embedding_0.mat</a> from that collection or
+<a href="https://zenodo.org/record/16710/files/combined_embedding_0.emb.ascii.gz">combined_embedding_0.emb.ascii</a> and <a href="https://zenodo.org/record/16710/files/combined_embedding_0.word.ascii.gz">combined_embedding_0.word.ascii</a>
+If you decide to use other embeddings files then please note that
+the embedding matrices in the matlab file need to be aligned to the
+vocabulary and then normalized as shown in the code below.</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> word=textread('$(VOCAB_500K_FILE)', '%s');
+ load('$(EMB_FILE)');
+ if exist('sort_idx')
+    word=word(sort_idx); % VERY IMPORTANT STEP 1 !!!
+ end;
+ G = normalize_embedding(G); % VERY IMPORTANT STEP 2 !!!
+ conduct_extrinsic_test_impl(G, ...);
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>The code is hosted at <a href="https://github.com/se4u/mvlsa">github.com/se4u/mvlsa</a></p>
+  </li>
+</ol>
+
+<h2 id="acknowledgements">Acknowledgements</h2>
+
+<p>This material is based on research sponsored by the Defense Advanced Research Projects Agency (DARPA) under the Deep Exploration and Filtering of Text (DEFT) Program (Agreement number FA8750-13-2-0017). We also thank Juri Ganitkevitch for providing the word aligned bitext corpus as part of <a href="http://paraphrase.org">the PPDB project</a></p>
+
+<h2 id="detailed-description">Detailed Description</h2>
+
+<p>MultiView LSA works in 4 stages</p>
+
+<ol>
+  <li>EXTRACT_COUNT</li>
+  <li>PROCESS_COUNT</li>
+  <li>MVLSA</li>
+  <li>EVALUATE</li>
+</ol>
+
+<p>Every stage creates files for the next stage. To run a particular
+stage, just run the shell script associated with it. For example, run
+process_count.sh after running the EXTRACT_COUNT stage that dumps
+co-occurrence counts into sparse .mat files.</p>
+
+<p><code class="highlighter-rouge">pipeline.sh</code> would run all the steps below
+Assuming that you have downloaded the matlab files containing
+co-occurrence counts to the directory
+<a href="file:commonheader.mk">EXTRACT_COUNT_FOLDER</a> and the
+<code class="highlighter-rouge">VOCABWITHCOUNT_500K_FILE</code> points to the vocabulary file that you
+downloaded. These configuration variables are specified in <code class="highlighter-rouge">commonheader.mk</code>.</p>
+
+<h2 id="extract_count">EXTRACT_COUNT</h2>
+<p>This is a tedious process with lots of grunt work, and though the code
+is provided you might not have access to the underlying resources. For
+example I used word aligned bitext corpora that were used as inputs
+for PPDB amongst others like FrameNet.</p>
+
+<p>To solve this problem just download the extracted co-occurrence counts
+as svmlight files or .mat file and go to the next step. Look at
+<code class="highlighter-rouge">extract_count.sh</code> and <code class="highlighter-rouge">extract_count.mk</code> for more details.</p>
+
+<h2 id="process_count">PROCESS_COUNT</h2>
+<p>There was some non-trivial tuning involved in getting good results
+with the Multiview LSA paper. See the file <code class="highlighter-rouge">process_count.sh</code> to see the
+best setting reported in the paper. You can simply run
+    ./process_count.sh
+assuming that <code class="highlighter-rouge">EXTRACT_COUNT_FOLDER</code> defined in <code class="highlighter-rouge">commonheader.mk</code> is
+set properly and that you downloaded the files from the previos step
+into that folder. Note that my code works with matlab files even
+though I provide the svmlight from previous stage for convenience.
+Also note that this process can be trivially parallelized on
+clusters since the commands in <code class="highlighter-rouge">process_count.sh</code> are independent of
+each other.</p>
+
+<h2 id="mvlsa">MVLSA</h2>
+<p>The heart of the algorithm. At its simplest it is just an SVD of the
+concatenated matrices derived from previous step. But care is required
+so that the matrices are not simultaneously loaded in memory and
+missing values need special attention. Run:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./mvlsa.sh
+</code></pre></div></div>
+
+<p>This script would produce the best embeddings reported in the paper.
+Note that this process is the slowest step, one by one we would
+load the mat files produced in the previous stage and then
+incrementally update our estimate of the left singular vectors. We
+load one matlab file at a time to balance memory usage and disk access
+but that is easy to change to load more or less data.
+Note that this process needs close to 10GB memory and 2.5 minute per
+view to run on a 10 core machine. (roughly 2 hours)
+It is possible to decrease the run time and memory required through
+more intelligent IO. (pre-loading data, mmap ?) but that’s not built
+in. The best embeddings are also provided for download as:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> `v5_embedding_mc_CountPow025-trunccol12500_500~E@mi,300_1e-5_16.mat`
+</code></pre></div></div>
+
+<h2 id="evaluate">EVALUATE</h2>
+<p>Once we have trained the embeddings they should appear in the EMB_FOLDER
+defined in the <code class="highlighter-rouge">commonheader.mk</code> file. For example, running
+<code class="highlighter-rouge">./mvlsa.sh</code> with default settings creates:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> `$EMB_FOLDER/v5_embedding_mc_CountPow025-trunccol12500_500~E@mi,300_1e-5_16.mat`
+</code></pre></div></div>
+
+<p>Now we can evaluate the embedding to reproduce the results reported in
+the paper. Run <code class="highlighter-rouge">./evaluate.sh</code> to get results like the following</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>The TOEFL score over G with bare [80, 78, 72] is 0.900000
+Now working on SCWS_FILENAME
+The SCWS Pearson correlation over G (2002 out of 2003) is 0.655713
+The SCWS Spearman correlation over G (2002 out of 2003) is 0.674836
+Now working on RW_FILENAME
+The RW Pearson correlation over G (1868 out of 2034) is 0.380015
+The RW Spearman correlation over G (1868 out of 2034) is 0.411926
+...
+...
+</code></pre></div></div>
+
+<p>Note that running the evaluation if you did not extract the counts
+yourself requires you to download the vocabulary file that I used for
+creating these embeddings. and store it in the vocabulary file
+folder. Change variable <code class="highlighter-rouge">VOCABWITHCOUNT_500K_FILE</code> in file
+<code class="highlighter-rouge">commonheader.mk</code>  to change the location of the vocabulary file. You
+can download the vocabulary file that we used to evaluate our
+embeddings as well. By default the script produces the results without
+combining with Glove embeddings, or Word2Vec embeddings, but the code
+provides enough hooks to easily do it.</p>
+
+<h2 id="mrds">MRDS</h2>
+<p>MRDS is a simple way to assign a minimum threshold <code class="highlighter-rouge">t</code> to a testset of
+size N. If the correlation coefficients of two competing methods
+differ by <code class="highlighter-rouge">t</code> then the difference is significant otherwise not. Please
+note that the above description hides details and you should see the
+paper for a more qualified and measured explanation. Run</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./mrds.sh
+</code></pre></div></div>
+
+<p>At its default settings <code class="highlighter-rouge">mrds.sh</code> would produce the last column of
+<code class="highlighter-rouge">Table~2</code> of the paper that describes the datasets used.</p>
+
+<h2 id="possible-future-work">Possible Future Work</h2>
+<ol>
+  <li>Task specific representation learning through feedback guided
+weights.</li>
+  <li>Which contexts give a boost (this is part of analysis)
+Basically we code PMI, PPMI, Glove’s Data dependent preprocessing as
+different views and then find which views get a high weight.
+I should decide the exact weighting strategy to use. Setting
+x-max really benefits the Semantic dataset however I can do a lot
+better in terms of weighting by carefully either
+either premultiply or postmultiply and then get basically a factored
+weighting.</li>
+  <li>Finally do humans really break the performance intro matrices of
+statistics that are called views ?</li>
+  <li>Tension between thresholding for noise removal and “missing value
+imputation for svd”.</li>
+</ol>
+
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+  <div class="wrapper">
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li>Pushpendre Rastogi</li>
+          <li><a href="mailto:pushpendre@gmail.com">pushpendre@gmail.com</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col  footer-col-2">
+        <ul class="social-media-list">
+          
+          <li>
+            <a href="https://github.com/se4u">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">se4u</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+  </body>
+
+</html>
