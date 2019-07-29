@@ -1,0 +1,37 @@
+#+TITLE: Class Diagrams from UML
+#+TAGS: jekyll org-mode
+#+LAYOUT: post
+#+liquid: enabled
+
+UML is a large language which can express timing information and many
+other types of information. Personally, I have only ever needed to
+express relations between classes for structuring my code and to
+understand [[https://en.wikipedia.org/wiki/Design_Patterns][the patterns book]]. In that subset of the language the
+idea is that the edges go from children to parents and the
+higher you go the more abstract you get.
+
+| Dependent           | Parent  | DependentClass sometimes uses ParentClass                              |
+| Associated          | Parent  | AssociatedClass uses Parentclass all the time                          |
+| Aggregate/Owner     | Child   | When owner is destroyed its children are not                           |
+| Container/Composite | Part    | When container is destroyed so are its contents                        |
+| Base(isa, super)    | Derived | The Base class is hypernym(hypo-specific, with more/multiple meanings) |
+#+html: <br/>
+Note how the base class is on top of the derived class. It looks
+jarring since a "base" is supposed to be at the bottom but if you
+think of it as a parent then everything is fine. Frankly, this just
+means that when one uses common words to describe a new
+object then we are helping our intuition but our intuition can come up
+with propositions that won't actually be true. As an example, think of
+open and closed sets.
+#+begin_src plantuml :file ~/Dropbox/se4u_github_io/res/tryout.png
+Dependent  ..>  Parent
+Associated -->  Parent_
+Aggregate  o--  Child
+Container  *-- Part
+Base       <|-- Derived
+#+end_src
+
+#+RESULTS:
+[[file:~/Dropbox/se4u_github_io/res/tryout.png]]
+
+#+html: <img src="{{site.baseurl}}/res/tryout.png">

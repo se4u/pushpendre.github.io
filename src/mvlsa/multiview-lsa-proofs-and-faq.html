@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <title>Multiview LSA Motivation and Proofs</title>
+  <meta name="description" content="When I was presenting my Multiview LSA (MVLSA) paper at NAACLI seriously felt that I hadleft out a lot of the background/motivation/proofsbehind GCCA from th...">
+  <link rel="stylesheet" href="/css/main.css">
+  <script type="text/javascript"
+    src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+    TeX: { equationNumbers: { autoNumber: "AMS" },
+    Macros : {rs: ["#1", 1],
+              rv: ["\\boldsymbol{#1}", 1],
+              rm: ["\\boldsymbol{#1}", 1],
+              us: ["\\mathsf{#1}", 1],
+              uv: ["\\mathbf{#1}", 1],
+              um: ["\\mathbf{#1}", 1],
+              ks: ["\\mathtt{#1}", 1],
+              kv: ["\\mathtt{#1}", 1],
+              km: ["\\mathtt{#1}", 1]}}});
+  </script>
+</head>
+  <body>
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Multiview LSA Motivation and Proofs</h1>
+    <p class="post-meta">Jun 16, 2015</p>
+  </header>
+
+  <article class="post-content">
+    <!-- <div class="definition"> </div> -->
+<p>When I was presenting my <a href="mvlsa/mvlsa.pdf">Multiview LSA (MVLSA)</a> paper at NAACL
+I seriously felt that I had
+left out a lot of the background/motivation/proofs
+behind GCCA from the paper due to lack of space and only gave the most essential pieces of the
+algorithm.
+I still think that it was a good call
+since the main point of the paper was to evaluate GCCA's
+performance and my own contribution was to A) Make sure that its
+computation was fast B) Leverage some methods to handle sparsity C) Do rigorous testing
+D) Get the best results possible by tuning hyperparameters.
+It's not like I derived GCCA itself.</p>
+
+<p>Anyway, a few people expressed interested in the
+derivation/motivation behind the method so I will write it down here.
+So this article would serve as a supplemental to the main paper.</p>
+
+<p>In this article I am going to start from scratch and first present (in
+words) the motivation that led to GCCA  and then show how equation 1
+and equation 3 from the paper result from it.</p>
+
+<p>Once again, I'll note that I am merely rephrasing things that were already derived by
+<a href="#carroll1968generalization">(Carroll, 1968)</a> and
+<a href="#kettenring1971canonical">(Kettenring, 1971)</a>. However, I do think that
+Kettenring's notation is too old and readers might prefer the
+simpler notation that I'll use.</p>
+
+
+<h3>What is the motivation for equation 1 in the paper ?</h3>
+
+<p>Alternatively, the question could be that why do I say that the
+objective of MAXVAR-GCCA is:</p>
+
+<script type="math/tex; mode=display">\begin{align}
+\arg \min_{G, U_j} \sum_{j=1}^J  || G - X_j U_j ||^2_F \text{ such that } G^TG = I \label{eq:mvlsa}
+\end{align}</script>
+
+<p>Just like PCA has at least 3 different interpretations/derivations
+GCCA too has multiple interpretations. Let me first state the
+motivations in words:</p>
+
+<ol>
+  <li>
+    <p>MAXVAR GCCA finds a representation that maximizes
+total squared correlation between an auxilliary variable
+and possible rank-<script type="math/tex">r</script> linear transformations/distortions of
+the data. (This is <em>Carroll's starting point</em>)</p>
+  </li>
+  <li>
+    <p>MAXVAR GCCA of rank <script type="math/tex">r</script> finds an orthogonal representation <script type="math/tex">G</script>
+that minimizes the total squared distance from rank-<script type="math/tex">r</script>
+subspace spanned by the data points available in different
+views. (<a href="#sengupta1983generalized">(Sengupta, 1983)</a> reports that
+ it was <a href="#coelho1992generalized">(Coelho, 1992)</a>
+ who first gave this "geometric" interpretation.)<sup><a href="#d198:fn:1" class="footnote" id="d198:fn-back:1">1</a></sup></p>
+  </li>
+  <li>
+    <p>There are two other closely related motivations that lead to the same solution:</p>
+
+    <p>a. MAXVAR GCCA finds projections of the data that make the
+   inter projection correlation matrix as close to a rank 1 matrix
+   as possible (This was how <a href="#horst1961generalized">(Horst, 1961)</a>
+   derived MAXVAR GCCA )</p>
+
+    <p>b. MAXVAR GCCA finds projections of the data that maximize the
+   highest eigen value of the inter projection correlation matrix.
+   (This was the Interpretation that
+   <a href="#kettenring1971canonical">(Kettenring, 1971)</a> gave. In his paper he basically
+   unified 4-5 different types of GCCA as optimizations of different measures
+   of the inter-correlation matrix. This was why he worded
+   rephrased Horst's criteria like this)</p>
+  </li>
+</ol>
+
+<p>Now the trouble is that even though the above statements
+are simple to read they are woefully imprecise. What is "inter projection
+correlation matrix"? What is "total squared distance"? What does it
+mean that a matrix is "as close to a rank 1 matrix" as possible?
+<sup><a href="#d198:fn:2" class="footnote" id="d198:fn-back:2">2</a></sup> To really understand how all these criteria can have the same
+solution we need precise notation.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Notation Matrix</th>
+      <th style="text-align: center">Random variable</th>
+      <th style="text-align: center">Unknown constant</th>
+      <th style="text-align: center">Known constant</th>
+      <th style="text-align: center"> </th>
+      <th style="text-align: center">Other Types</th>
+      <th>Examples</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Scalar</strong></td>
+      <td style="text-align: center">(rs) $ x $</td>
+      <td style="text-align: center">(us) $ \us{x} $</td>
+      <td style="text-align: center">(ks)$ \ks{x} $</td>
+      <td style="text-align: center"> </td>
+      <td style="text-align: center"><strong>Sets 1</strong></td>
+      <td>$ \mathbb{R} $</td>
+    </tr>
+    <tr>
+      <td><strong>Vector</strong></td>
+      <td style="text-align: center">(rv) $ \rv{x} $</td>
+      <td style="text-align: center">(uv) $ \uv{x} $</td>
+      <td style="text-align: center">(kv) $ \kv{x} $</td>
+      <td style="text-align: center"> </td>
+      <td style="text-align: center"><strong>Sets 2</strong></td>
+      <td>$ \mathcal{S} $</td>
+    </tr>
+    <tr>
+      <td><strong>Matrix\Tensor</strong></td>
+      <td style="text-align: center">(rm) $ \rm{X} $</td>
+      <td style="text-align: center">(um) $ \um{X} $</td>
+      <td style="text-align: center">(km) $ \km{X} $</td>
+      <td style="text-align: center"> </td>
+      <td style="text-align: center"> </td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Let us look at Carroll's original criteria (Motivation 1)</strong></p>
+
+<p>Imagine that we have $ \ks{J} $ random variables
+$ \rv{x}_j \; j \in [1, \ldots, \ks{J}]$ all of which have zero mean.
+We want to find a single scalar linear projection
+$ \rs{z}_j $ of each data source, i.e.</p>
+
+<script type="math/tex; mode=display">\exists \uv{u}_j \in \mathbb{R}^{\ks{d}_j}: \rs{z}_j = \rv{x}_j \cdot \uv{u}_j</script>
+
+<p>and some "auxilliary" mean-zero random variable $ \rs{g} $ such that $ \rs{g} $ and $ \rs{z_j} $ have as high
+total squared correlation as possible. I.e. we maximize \eqref{eq:carroll}:</p>
+
+<script type="math/tex; mode=display">\begin{align}
+  \sum_{j=1}^{\ks{J} } \text{correlation}(\rs{g}, \rs{z}_j)^2 \label{eq:carroll}
+\end{align}</script>
+
+<div class="note">
+  <p>At first sight it is not obvious why \eqref{eq:carroll} is a good objective.
+It has some redeeming qualities such as the fact that it is constraining the auxiliary variable
+to correlate well with any linear projection of the data.
+So there is some flexibility in the model but not too much.
+But what if we want to correlate more with one of the data sources ?
+One could easily add some multiplicative weights to this criteria to get some more flexibility.
+Would that be enough ? Probably not.
+We will further analyze criteria \eqref{eq:carroll} later on, for now lets do the optimization.</p>
+</div>
+
+<p>Let's say that we have $\ks{n}$ data points. Let's denote the sample space manifestation of
+$\rs{g} $ as $\uv{g} $ and of $ \rs{z}_j $ as $ \uv{z}_j $. Note that these are both unknown vectors in the sample space.
+Now $ \text{correlation}(\rs{g}, \rs{z}_j)^2 $ can be estimated as follows:</p>
+
+<p>Since we have control over both $\rs{g}$ and $\rs{z}_j$ we could constrain both of them to have unit $l_2$ norm and then
+try to solve the optimization problem. The optimization problem would look like</p>
+
+<script type="math/tex; mode=display">\sum_{j=1}^{\ks{J} } (\frac{\uv{g}^\intercal \uv{z}_j}{\sqrt{ \uv{g}^\intercal \uv{g} } \sqrt{ \uv{z}^\intercal \uv{z} } })^2</script>
+
+<p style="text-align: center;">Or</p>
+
+<script type="math/tex; mode=display">\begin{equation}
+ \sum_{j=1}^{\ks{J} } ({\uv{g}^\intercal \uv{z}_j} )^2 \\
+ \text{subject to } ||\uv{g}||_2 = 1 \text{ and } ||\uv{z}_j||_2 = 1 \;\; \forall j
+ \end{equation}</script>
+
+<p>But this optimization problem is hard and there is a trick to solve this.
+Note that we don't really need to constrain both $ \uv{g} $ and $ \uv{z}_j $.
+We can instead constrain only $ ||\uv{g}||_2^2 = 1 $ and then maximize
+the <strong>squared length of the projection</strong> of $ \uv{g} $
+onto $ \uv{z}_j $ which is numerically the same as the cosine similarity
+(correlation) between $ \uv{g} $ and $ \uv{z}_j $.
+So the optimization criteria becomes</p>
+
+<script type="math/tex; mode=display">\arg \max_{\uv{g}, \uv{z}_j} \sum_{j=1}^{\ks{J} }\text{projection}(\uv{g}, \uv{z}_j)^2 \text{subject to} ||\uv{g}||_2^2 = 1</script>
+
+<p>We further note that for any value of $\uv{g}$ the following relation holds (by the pythagoras theorem)</p>
+
+<script type="math/tex; mode=display">\max_{\uv{z}_j} \text{projection}(\uv{g}, \uv{z}_j)^2  = || \uv{g} ||^2_2 - \min_{ \uv{z}_j } || \uv{g} - \uv{z}_j ||^2_2</script>
+
+<p>Therefore the optimization criteria translates to:</p>
+
+<script type="math/tex; mode=display">\arg \min_{\uv{g}, \uv{z}_j} \sum_{j=1}^{\ks{J} } ||\uv{g} - \uv{z}_j||^2_2 \text{subject to} ||\uv{g}||_2^2 = 1</script>
+
+<p>Now we only have to generalize to the case where instead of searching for a scalar projection of the data
+$\rs{z}_j$ we are instead looking for multiple projections. Clearly we must add constrain the projections in some
+way otherwise all of them could end up the same. It turns out that the constraint
+$\text{correlation}(\rs{g}_i, \rs{g}_j) = 0 \;\; \forall i, j : j \ne i $
+over auxiliary representations $\rs{g}_1, \rs{g}_2, \ldots$  is enough
+to ensure that we learn interesting projections. And this leads to the optimization problem \eqref{eq:mvlsa}
+from the paper. Q.E.D.</p>
+
+<h3>So how do we optimize criteria \eqref{eq:mvlsa}</h3>
+
+<p>Since \eqref{eq:mvlsa} is a real valued function that is bounded below by $0$ therefore it must have at least one global minima.
+Assume that $\um{G}^* $ is the value of $\um{G} $ at one such minima.
+Now each member of $ || \um{G} - \um{X}_j \um{U}_j ||_F^2 $ of the objective
+is a linear regression with $ \um{U}_j $ as the unknown. So the solution
+for $\um{U}_j$ is $(\um{X}_j^{\intercal} \um{X}_j)^{-1}\um{X}_j^{\intercal}\um{G}$.
+Let $\um{P}_j = \um{X}_j(\um{X}_j^{\intercal} \um{X}_j)^{-1}\um{X}_j^{\intercal}$ and
+note that $||\um{M}||^2_F = \text{trace}(\um{M}^\intercal \um{M})$.
+So our objective translates to:</p>
+
+<script type="math/tex; mode=display">\begin{equation}
+\arg \min_{\um{G} } \sum_{j=1}^{\ks{J} } \text{trace}( (\um{G} - \um{P}_j\um{G})^\intercal (\um{G} - \um{P}_j\um{G}) ) \text{ subject to } \um{G}^\intercal \um{G} = I \\
+= \um{G}^\intercal \left( \sum_{j=1}^{\ks{J} } ({I} - \um{P}_j)^\intercal ({I} - \um{P}_j) \right) \um{G} \text{ subject to } \um{G}^\intercal \um{G} = {I}
+\end{equation}</script>
+
+<p>Now <a href="/~prastog3/2015/06/15/eigenvalue-problems.html">we know that this is an eigenvector problem</a> and its solutions are
+the eigen vectors of $ \sum_{j=1}^{\ks{J} } ({I} - \um{P}_j)^\intercal ({I} - \um{P}_j) $.
+Consider</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\begin{align*}
+\um{M} &= \sum_{j=1}^{\ks{J} } ({I} - P_j)^\intercal ({I} - P_j) \\
+&= \sum_{j=1}^{\ks{J} } ({I} - P_j^\intercal - P_j + P_j^\intercal P_j) \\
+&= \sum_{j=1}^{\ks{J} } ({I} - P_j) \text{If }P_j \text{ is symmetric and idempotent } \\
+&= \ks{J}{I}  - \sum_{j=1}^{\ks{J} } (P_j)
+\end{align*} %]]></script>
+
+<p>Also note that the eigen vectors of ${I} - \km{M}$ are the same as the eigen vectors of $ M $.
+Therefore the optimal $G$ can be found by computing the eigen vectors of $\sum_{j=1}{\ks{J} } P_j$.</p>
+
+<div class="note">
+  <p>Corner Cases: The attentive reader would notice that there are corner cases that we did not address, like what happens if
+$(\um{X}_j^{\intercal} \um{X}_j)^{-1}$ is not defined. While it is possible to cover these corner cases, we took the simpler root
+and defined $P_j$ through $(\um{X}_j^{\intercal} \um{X}_j) + r I$. That ensures that all the assumptions about existence, symmetry
+and idempotency of the projection matrix hold true.</p>
+</div>
+
+<h3>What about criteria 3a and 3b</h3>
+
+<p>When I started writing this post, I did not realize that writing proofs is so hard.
+Now I can appreciate why people take short cuts and leave exercises.
+But any way let's press on.</p>
+
+<p>Let's first establish that 3a is the same as 3b. Actually I think I can leave that as an exercise since this is just the
+[Eckart-Young]https://en.wikipedia.org/wiki/Singular_value_decomposition#Applications_of_the_SVD) theorem restated.
+And 3b has been derived quite clearly in <a href="#kettenring1971canonical">(Kettenring, 1971)</a> so I won't repeat him.</p>
+
+<h3>So what's left to do ?</h3>
+
+<p>Here's what I think my next steps should be:</p>
+<ol>
+  <li>
+    <p><a href="#kakade2007multi">(Kakade &amp; Foster, 2007)</a> and <a href="#sridharan2008information">(Sridharan &amp; Kakade, 2008)</a> did information-theoretic/CoLT-type analysis of Multi-view learning and CCA. What is not clear to me and what would be nice to have are measurable condition about what constitutes a separate view ? After all we could just concatenate the matrices into a single view and then do LSA or Glove or Whatever ? When would hunting for correlation be better than hunting for variance ?</p>
+  </li>
+  <li>
+    <p>In our paper we never compared GCCA to basic LSA !! I think that was an oversight and that experiment must be run. Also I can probably feed all my co-occurrence matrices to Glove and run it. What would it learn ?</p>
+  </li>
+  <li>
+    <p>I talked about how Venvelden and Takane had collaborated and come up with better regularization methods. But I never applied them to our task ? Also I showed how we could approximate Glove by a special regularization scheme. Both of these experiments should be run and applied to the task.</p>
+  </li>
+  <li>
+    <p>Probabilistic GCCA. This has been on my plate for a while, and I think I'd try to blog the solution but the gist is that Tipping, Bishop and Sam Roweis did a factor analysis of PCA, Francis Bach and Michael Jordan gave probabilistic CCA. It should be pretty straight forward to do probabilistic GCCA. The key point is not whether its possible, it almost certainly is, but that once I do how would I use it ? What good is probabilistic GCCA once you know the formulas ?</p>
+  </li>
+  <li>
+    <p>Task specific GCCA. Till date all my experiments have been unsupervised but like I remarked earlier it is possible to add parameters to the model that can be tuned discrimatively.</p>
+  </li>
+</ol>
+
+<h2 class="no_toc" id="footnotes">Footnotes</h2>
+<ol class="footnotelist">
+<li id="d198:fn:1" class="footnotebody" value="1">
+    This is like the
+   statistical-geometric interpretations of PCA.
+   <a href="#d198:fn-back:1" class="backlink">back</a></li>
+<li id="d198:fn:2" class="footnotebody" value="2">
+   But the problem is also that if we give the rigorous definitions
+   without a summary of what those definitions and derivations should
+   be interpreted as, then it becomes hard to maintain interest. So
+   it's a chicken and egg problem.
+   <a href="#d198:fn-back:2" class="backlink">back</a></li>
+</ol>
+
+<h2 class="no_toc" id="bibliography">Bibliography</h2>
+<ol class="bibliography"><li><span id="carroll1968generalization">Carroll, J. D. (1968). Generalization of canonical correlation analysis to three or more sets of variables. In <i>Proceedings of APA</i> (Vol. 3).</span></li>
+<li><span id="kettenring1971canonical">Kettenring, J. R. (1971). Canonical analysis of several sets of variables. <i>Biometrika</i>, <i>58</i>(3), 433–451.</span></li>
+<li><span id="sengupta1983generalized">Sengupta, A. (1983). Generalized Canonical Variables. <i>Encyclopedia of Statistical Sciences</i>.</span></li>
+<li><span id="coelho1992generalized">Coelho, C. A. (1992). <i>Generalized Canonical Analysis</i> (PhD thesis).</span></li>
+<li><span id="horst1961generalized">Horst, P. (1961). Generalized canonical correlations and their applications to experimental data. <i>Journal of Clinical Psychology</i>, <i>17</i>(4).</span></li>
+<li><span id="kakade2007multi">Kakade, S. M., &amp; Foster, D. P. (2007). Multi-view regression via canonical correlation analysis. In <i>Learning Theory</i>. Springer.</span></li>
+<li><span id="sridharan2008information">Sridharan, K., &amp; Kakade, S. M. (2008). An Information Theoretic Framework for Multi-view Learning. In <i>Proceedings of COLT</i>.</span></li></ol>
+
+  </article>
+
+     <div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'httpwwwcsjhueduprastog3';
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+  <div class="wrapper">
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li>Pushpendre Rastogi</li>
+          <li><a href="mailto:pushpendre@gmail.com">pushpendre@gmail.com</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+  </body>
+
+</html>
