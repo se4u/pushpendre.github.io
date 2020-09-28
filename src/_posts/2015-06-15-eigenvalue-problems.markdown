@@ -18,7 +18,7 @@ maximizes the following objective:
 $$ \arg \max_{ \uv{x} } \frac{\uv{x}^\intercal \um{M} \uv{x}}{||\uv{x}||^2}
 $$
 
-{% center_text Or %}
+Or
 
 $$ \arg \max_{ \uv{x} } \uv{x}^\intercal \um{M} \uv{x} \text{ subject to } ||\uv{x}|| = 1
 $$
