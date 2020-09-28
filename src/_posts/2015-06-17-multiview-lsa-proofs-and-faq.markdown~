@@ -120,7 +120,7 @@ try to solve the optimization problem. The optimization problem would look like
 $$ \sum_{j=1}^{\ks{J} } (\frac{\uv{g}^\intercal \uv{z}_j}{\sqrt{ \uv{g}^\intercal \uv{g} } \sqrt{ \uv{z}^\intercal \uv{z} } })^2
 $$
 
-{% center_text Or %}
+Or
 
 $$ \begin{equation}
  \sum_{j=1}^{\ks{J} } ({\uv{g}^\intercal \uv{z}_j} )^2 \\
