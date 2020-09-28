@@ -32,7 +32,7 @@ $$
 \end{align*}
 $$
 
-{% center_text AND, $\bar{v}$ is generated as follows %}
+AND, $\bar{v}$ is generated as follows
 
 $$
 \begin{equation*}
