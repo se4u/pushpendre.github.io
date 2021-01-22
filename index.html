@@ -59,8 +59,48 @@
             <li>"Stationarity condition for fractional sampling filters".Pushpendre Rastogi. (2011) <a href="/res/mtp.pdf">[pdf]</a></li></ul>
 <h2>Education</h2><table><tbody><tr><td style="text-align: left;">Ph.D. and M.S. in Computer Science</td><td>Johns Hopkins University</td><td>2013-19</td><td>3.75/4.0</td></tr><tr><td colspan="4" style="text-align: left;">Thesis Topic: Representation Learning for Words and Entities. I presented new methods for unsupervised learning of word and entity embeddings from texts and knowledge bases.<br />Courses and Grades: Natural Language Processing (A), Machine Learning in Complex Domains (A), Stochastic Search & Optimization (B), Parallel Programming (A-), Principles of Programming Languages (A-), Combinatorial Optimization (A+), Introduction to Convexity (A-)</td></tr><tr><td style="text-align: left;">M.Tech. in Information and Communication Technology</td><td>IIT Delhi</td><td>2010-11</td><td>8.77/10</td></tr><tr><td style="text-align: left;">B.Tech. in Electrical Engg.</td><td>IIT Delhi</td><td>2006-10</td><td>8.86/10</td></tr></tbody></table>
       
-<h2>Code Snippets</h2>
-      <pre><code> print("hello") </code></pre>
+<h2>Code Snippets and tricks</h2>
+<!--  <details>
+            <summary> XXX </summary>
+            <p><pre><code> YYYY </code></pre></p>
+      </details> -->
+      <details>
+            <summary> Interactive pool for running jobs on the side in python. </summary>
+            <p><pre><code> class InteractivePool:
+    def __init__(self, J):
+        import time
+        self.J = J
+        self.tic = time.time()
+        
+    def done(self):
+        return sum(1 for j in self.J if j.done()), len(self.J)
+    
+    def collect(self,R=None):
+        R = R or {}
+        print(len(R))
+        for i, j in enumerate(self.J):
+            if i not in R and j.done() and not j.cancelled():
+                R[i] = j.result()
+        print(len(R))
+        return R
+    
+    def time(self):
+        import datetime, time as time_module
+        return str(datetime.timedelta(seconds=time_module.time() - self.tic))
+    
+    def wait(self, interval=600):                                
+        import time                                              
+        while True:                                              
+            time.sleep(interval)                                 
+            if sum(1 for j in self.J if j.done()) == len(self.J):
+                break                                            
+        return                                                   
+
+from concurrent.futures import ProcessPoolExecutor    
+sidejob = ProcessPoolExecutor(max_workers=4).submit
+P = InteractivePool([sidejob(f, i) for i in range(80)]) </code></pre></p>
+      </details>
+      
       
 <h2>Technical Notes</h2>
 All notes are also hosted in <a href="https://www.dropbox.com/sh/u5e7eo8a5i4jyoz/AABaA_mTNow4kmtv7kWK5faAa?dl=0">a dropbox folder</a>.
