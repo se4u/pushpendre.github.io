@@ -9,7 +9,32 @@
           .mainContent {
             float:left;
             width:75%;
-          } </style>
+          }
+          .collapsible {
+              background-color: #eee;
+              color: #444;
+              cursor: pointer;
+              padding: 18px;
+              width: 100%;
+              border: none;
+              text-align: left;
+              outline: none;
+              font-size: 15px;
+            }
+
+            /* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
+            .active, .collapsible:hover {
+              background-color: #ccc;
+            }
+
+            /* Style the collapsible content. Note: hidden by default */
+            .content {
+              padding: 0 18px;
+              display: none;
+              overflow: hidden;
+              background-color: #f1f1f1;
+            }
+      </style>
 </head>
 
 <body><div class="menu"><img src="res/header.png" width="90%" /><a class="twitter-timeline" data-height="725" data-width="200" data-dnt="true" href="https://twitter.com/Pushpendre89?ref_src=twsrc%5Etfw">Twitter</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script></div><div class="main-content"><header class="col-span">
@@ -36,7 +61,10 @@ All notes are also hosted in <a href="https://www.dropbox.com/sh/u5e7eo8a5i4jyoz
   <tbody>
     <tr><td>
           <a href="res/note1.html">Note 1</a> Describes how the variance of an AB test can be reduced in the special case when we are comparing two policies with the same small-finite action space. <a href="res/note1.pdf">[PDF]</a>
-          <p>हम दो विधियों/treatments के बीच में कितना फर्क है ये पता करना चाहते है। साधारण तरीका होगा AB testing/ randomized control trials जिसमें की हम randomly/बेतरतीब तरिके से आधे लोगो को विधि A आवंटित करते है और आधे को विधि B प्रदान करते है । उसके बाद दोनों दल में औसत फर्क का अंतर हम पता करते है । ये सबसे आसान पद्धति हैं  और   मानलो की इस पद्धति को इस्तेमाल करने पर हमे 10000 लोगो पे परीक्षण करना पड़ेगा ताकि हम 10% का फर्क दोनो दलों के बीच मे पता कर पाए। जो pdf मैंने भेजी है वो एक विशेष स्थिति का विश्लेषण प्रशेष करती है जो की 25%  कम sample इस्तेमाल करती है। ofcourse ये कोई नई तकनीक नही है सिर्फ मैने अपनी समझ के लिये लिखी है।</p>
+          <details>
+            <summary>हिंदी विवरण</summary>
+            <p>हम दो विधियों/treatments के बीच में कितना फर्क है ये पता करना चाहते है। साधारण तरीका होगा AB testing/ randomized control trials जिसमें की हम randomly/बेतरतीब तरिके से आधे लोगो को विधि A आवंटित करते है और आधे को विधि B प्रदान करते है । उसके बाद दोनों दल में औसत फर्क का अंतर हम पता करते है । ये सबसे आसान पद्धति हैं  और   मानलो की इस पद्धति को इस्तेमाल करने पर हमे 10000 लोगो पे परीक्षण करना पड़ेगा ताकि हम 10% का फर्क दोनो दलों के बीच मे पता कर पाए। जो pdf मैंने भेजी है वो एक विशेष स्थिति का विश्लेषण प्रशेष करती है जो की 25%  कम sample इस्तेमाल करती है। ofcourse ये कोई नई तकनीक नही है सिर्फ मैने अपनी समझ के लिये लिखी है।</p>
+          </details>
         </td>
     </tr>
     <tr><td> <a href="res/note2.mp4">Note 2</a> A video tutorial - primarily for my own understanding - about the difference between PnL and Cashflow, and how a company can have positive cash flow but still make loss, without raising debt. (you may need to download the video and play with VLC)</td></tr>
