@@ -99,8 +99,328 @@
 from concurrent.futures import ProcessPoolExecutor    
 sidejob = ProcessPoolExecutor(max_workers=4).submit
 P = InteractivePool([sidejob(f, i) for i in range(80)]) </code></pre></p>
-      </details>
+</details>
+
+<details>
+      <summary> Save spark dataframe to sparse scipy arrays </summary>
+      <p><pre><code> from functools import partial
+import pyspark.ml as pm
+from typing import * 
+from scipy.sparse import csr_matrix, vstack, lil_matrix, load_npz, save_npz
+from pyspark import TaskContext
+from tempfile import TemporaryDirectory
+from glob import glob
+
+def sparseVectorList_to_CSRMatrix(X: List[pm.linalg.SparseVector]) -> csr_matrix:
+     """ Convert list of pyspark sparse vectors to a scipy CSR matrix that
+     a standard sklearn function/lightgbm can consume.
+     """
+     M = lil_matrix((len(X), X[0].size), dtype=np.float)
+     for i, x in enumerate(X):
+         I = np.argsort(x.indices)
+         M.rows[i] = x.indices[I]
+         M.data[i] = x.values[I]
+     return M.tocsr(copy=False)
+
+ class RowToPredict(NamedTuple):
+     "This class was created just to facilitate linting and type hinting."
+     customer_id: str
+     features: pm.linalg.SparseVector
+
+def save_features_in_spark_as_sparsescipy_to_hdfs(
+     hdfs_dir,
+     row_gen: Iterable[RowToPredict]):
+     C, Flist = [], []
+     for e in row_gen:
+         Flist.append(e.features)
+         C.append(e.customer_id)
+     F = sparseVectorList_to_CSRMatrix(Flist)
+     pid = TaskContext().partitionId()
+     # Ideally I will upload file directly to HDFS, but I don't know how to directly
+     # write to HDFS. hdfscli didn't work for me. So work-around is to save to local
+     # file on task node, then upload to HDFS with a subprocess call.
+     with TemporaryDirectory() as tmpdirname:
+         print('created temporary directory', tmpdirname)
+         fname = f'{tmpdirname}/F.{pid}.npz'
+         cname = f'{tmpdirname}/C.{pid}.pkl'
+         with open(fname) as fh:
+             save_npz(fh, F)
+         with open(cname) as fh:
+             pickle.dump(C, fh)
+         subprocess.getstatusoutput('hadoop fs -put {fname} {cname} {hdfs_dir}')
+     return 
+
+# make sure that each partition has a reasonable number of rows so that we don't OOM.
+npart = sdf.count() // 10000 
+sdf.rdd.repartition(npart).foreachPartition(partial(
+    save_features_in_spark_as_sparsescipy_to_hdfs, '/data/')
+
+# After saving all the parts to hdfs, download the parts, and open them on master node.
+subprocess.getstatusoutput('hadoop -copyToLocal /data/ /home/hadoop/')
+L = glob('data/*.npz')
+F = vstack([load_npz(e) for e in L])
+C = [c for e in L for c in pickle.load(open(e))] </code></pre></p>
+</details>
       
+<details>
+      <summary> How to hash check pip files </summary>
+      <p><pre><code> 1. Install virtualenv                                         
+1. Create workspace, download package.                        
+1. Go where the requirements file is.                         
+1. Create fresh empty environment and activate it             
+1. install all requirements                                   
+1. generate hashes for all installed packages                 
+1. close the shell and create new one                         
+1. Create fresh empty environment and activate it             
+1. check that the new requirements file can be installed with 
+
+pip install virtualenv  pip-tools
+python3 -m venv env;  source env/bin/activate                                                                                                                                                        
+ pip list > before; pip install -r requirements.txt; pip list > after                                                                                                                          
+ pip-compile requirements.txt --generate-hashes # this overwrites the original file.                                                                                                           
+ exit; bash                                                                                                                                                                                           
+ python3 -m venv env2; source env2/bin/activate                                                                                                                                                       
+ pip install --require-hashes -r requirements.txt
+</code></pre></p>
+</details>
+
+<details>
+      <summary> hdfs file system functionality exposed to python </summary>
+      <p><pre><code> def hdfs_exists(path, flag='-e'):
+    code, output = subprocess.getstatusoutput(f'hadoop fs -test {flag} {path}')
+    if code != 0:
+        print(output)
+        return False
+    else:
+        return True
+
+def copyFromLocal(src, dst):
+    return subprocess.getstatusoutput(f'hadoop fs -copyFromLocal {src} {dst}')
+
+def copyToLocal(src, dst):
+    return subprocess.getstatusoutput(f'hadoop fs -copyToLocal {src} {dst}') </code></pre></p>
+</details>
+
+<details>
+      <summary> Spark Setup </summary>
+      <p><pre><code> def setup(RUNDATE='2020-07-16', spark_setting_file=None):
+    """ Construct spark session, setup logger, and read YAML files
+    from prime-ml-repo in production EMR clusters. After reading yaml files
+    format the paths with dates.
+
+    RUNDATE is a date string like this '2020-05-30'
+    """
+    assert re.match('\d{4}-\d{2}-\d{2}', RUNDATE)
+    if spark_setting_file is None:
+        spark_setting_file = StringIO("""scoring:
+     spark.executor.memory: '20G'
+     spark.executor.memoryOverhead: '4G'
+     spark.executor.cores: 4
+     spark.task.cpus: 1
+     spark.yarn.am.memory: '2G'
+     spark.serializer: 'org.apache.spark.serializer.KryoSerializer'
+     spark.driver.maxResultSize: 0
+     spark.executor.extraJavaOptions: '-XX:+UseG1GC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps'
+     spark.kryoserializer.buffer.max: '512M'
+     spark.cleaner.periodicGC.interval: '5min'
+     spark.network.timeout: '600s'""")
+    # Use logger to log everything to file and also to stderr.
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        "%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    fh = logging.FileHandler("/home/hadoop/scoring_log_file.log")
+    fh.setLevel(logging.INFO)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    logger.info(f"Initialize job parameters. {RUNDATE}")
+
+    parameters = {}
+
+    logger.info("Initialize spark settings and spark session.")
+    spark = SparkSession.builder.appName("claire")
+    for key, value in yaml.safe_load(spark_setting_file)["scoring"].items():
+        logger.info(f'spark: {key}={value}')
+        spark = spark.config(key, value)
+    spark = spark.enableHiveSupport().getOrCreate()
+    spark.sparkContext.setLogLevel(os.environ.get("SPARK_LOG_LEVEL", "DEBUG")) 
+    try:
+        spark.sparkContext.setCheckpointDir("hdfs:///checkpoint/spark/")
+    except Exception as exception:
+        warnings.warn("Unable to set spark checkpoint directory !")
+    return spark, parameters, logger </code></pre></p>
+</details>
+
+<details>
+      <summary> Common model inspections on binary classification test set</summary>
+      <p><pre><code> def tabulate(label, proba, **kwargs):
+    """ Compute common statistics on a binary classification problem
+    given the true labels and the class probabilities.
+    """
+    assert proba.shape[1] == 2
+    assert len(label) == len(proba)
+    R = SimpleNamespace()
+    R.accuracy = (label == proba.argmax(1)).mean()
+    R.majority_rule_accuracy = max(1 - label.mean(), label.mean())
+    R.log_loss = -np.log(np.select([label==0, label==1],
+                                   [proba[:, 0], proba[:, 1]])).mean()
+    fpr, tpr, thresholds = skm.roc_curve(label, proba[:, 1])
+    R.roc_auc = skm.auc(fpr, tpr)
+    try:
+        idx = np.where(fpr < 0.05)[0].max()
+        R.tp_at_fp_less_than_5_percent = tpr[idx]
+        R.fp_at_fp_less_than_5_percent = fpr[idx]
+        R.threshold_at_fp_less_than_5_percent = thresholds[idx]
+    except ValueError as e:
+        print(e)
+        pass
+    precision, recall, thresholds = skm.precision_recall_curve(label, proba[:, 1])
+    R.prauc = skm.auc(recall, precision)
+    R.precision = precision
+    R.recall = recall
+    R.thresholds = thresholds
+    idx = np.where(precision > 0.9)[0].min()
+    R.smallest_precision_greater_than_90pct = precision[idx]
+    R.recall_at_precision_90pct = recall[idx]
+    R.threshold_at_precision_90pct = thresholds[idx]
+
+    idx = np.where(precision > 0.5)[0].min()
+    R.smallest_precision_greater_than_50pct = precision[idx]
+    R.recall_at_precision_50pct = recall[idx]
+    R.threshold_at_precision_50pct = thresholds[idx]
+
+    R = R.__dict__
+    R.update(kwargs)
+    return R </code></pre></p>
+</details>
+
+<details>
+      <summary> Boilerplate for configuring logger in python </summary>
+      <p><pre><code> import logging
+def setup_logger(file_path=None):
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        "%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
+
+    if all(not isinstance(e, logging.FileHandler) 
+           for e in logger.handlers):
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.INFO)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+        logger.info(f"Initialized logger with StreamHandler")
+    
+    if file_path and all(not isinstance(e, logging.FileHandler)
+                         for e in logger.handlers):
+        fh = logging.FileHandler(file_path, 'a')
+        fh.setLevel(logging.INFO)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+        logger.info(f"Initialized logger with FileHandler({file_path})")
+
+    return </code></pre></p>
+</details>
+
+<details>
+      <summary> Java - Python/Numpy Fast Copy-Free Exchange </summary>
+      <p><pre><code> /* Java */
+
+        short a = 3; // 2
+        long b = 5; // 8
+        float c = (float)7.0; // 4
+        ByteBuffer bb = ByteBuffer.allocate(14);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        bb.putShort(a);
+        pp(bb.position()); // 2
+        bb.putLong(b);
+        pp(bb.position()); // 10
+        bb.putFloat(c);
+        pp(bb.position()); // 14
+        bb.position(0); // crucial.
+        try(RandomAccessFile f = new RandomAccessFile("/tmp/tmp.dat", "rw");
+            FileChannel fc = (f).getChannel();) {
+                pp(bb.order().toString());
+                pp(fc.write(bb));
+        }
+
+
+        ## Python
+
+        from mmap import mmap, PROT_READ
+        import os
+        import numpy as np
+        import sys
+        assert sys.byteorder == 'little'
+        fd = os.open('/tmp/tmp.dat', os.O_RDONLY)
+        buf = mmap(fd, 14, prot=PROT_READ)
+        # L = little endian.
+        arr1 = np.frombuffer(buf, dtype=np.dtype('int16').newbyteorder('L'), count=1, offset=0)
+        arr2 = np.frombuffer(buf, dtype=np.dtype('int64').newbyteorder('L'), count=1, offset=2)
+        arr3 = np.frombuffer(buf, dtype=np.dtype('float32').newbyteorder('L'), count=1, offset=10)
+        arr1, arr2, arr3 </code></pre></p>
+</details>
+
+<details>
+      <summary> Java - Simple printing function. </summary>
+      <p><pre><code> static void pp(Object format, Object... args) {
+        System.out.printf(format.toString(), args);
+        System.out.println();
+    } </code></pre></p>
+</details>
+
+<details>
+      <summary> Json encode numpy objects </summary>
+      <p><pre><code> class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif type(obj).__module__ == 'numpy':
+            if type(obj).__name__.startswith('float'):
+                return float(obj)
+            elif type(obj).__name__.startswith('int'):
+                return int(obj)
+            else:
+                return bool(obj)
+        return json.JSONEncoder.default(self, obj) </code></pre></p>
+</details>
+
+<details>
+      <summary> List busy EMR machines and the total reserved machines </summary>
+      <p><pre><code> aws emr list-clusters --region us-east-1 --active  > /tmp/tmp1
+jq '.Clusters|.[]|.Id' /tmp/tmp1 -r | xargs -n 1 -I % sh -c 'aws emr list-instances --cluster-id % --instance-states RUNNING --region us-east-1' > /tmp/tmp2
+jq '.Instances | .[] | .InstanceType' /tmp/tmp2 -r | sort | uniq -c
+aws ec2 describe-reserved-instances --region us-east-1 | jq '.ReservedInstances | .[] | [.InstanceType, .InstanceCount, .State]' -c -r | fgrep -v retired | sort </code></pre></p>
+</details>
+
+<details>
+      <summary> Excel VBA functions for testing significance of binomial A/B tests. Two-sided ZTest Pvalue from ratios and counts </summary>
+      <p><pre><code> 'Two-sided ZTest Pvalue from counts
+Public Function CountsZTest(count1, nob1, count2, nob2)
+    CountsZTest = RatioZTest(count1 * 1# / nob1, nob1, count2 * 1# / nob2, nob2)
+End Function
+Public Function RatioZTest(p1, nob1, p2, nob2)
+    diff = p1 - p2
+    p_pooled = (p1 * nob1 + p2 * nob2) * 1# / (nob1 + nob2)
+    nobs_2xhm = 1# / nob1 + 1# / nob2
+    var1 = p_pooled * (1 - p_pooled) * nobs_2xhm
+    std_diff = Sqr(var1)
+    RatioZTest = Application.WorksheetFunction.Norm_S_Dist(-Abs(diff / std_diff), True) * 2
+End Function </code></pre></p>
+</details>
+
+<!-- <details>
+      <summary> XXX </summary>
+      <p><pre><code> YYYY </code></pre></p>
+</details>
+ -->
+
       
 <h2>Technical Notes</h2>
 All notes are also hosted in <a href="https://www.dropbox.com/sh/u5e7eo8a5i4jyoz/AABaA_mTNow4kmtv7kWK5faAa?dl=0">a dropbox folder</a>.
