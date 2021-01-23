@@ -2,17 +2,34 @@
 <head>
       <meta charset="UTF-8" />
       <title>Pushpendre Rastogi Homepage</title>
-      <style> .menu {
+      <style> 
+      .menu {
             float:left;
             width:220px;
-          }
-          .mainContent {
+      }
+      .mainContent {
             float:left;
             width:75%;
-          }
-          tr.spaceUnder>td {
-              padding-bottom: 1em;
-          }
+      }
+      tr.spaceUnder>td {
+            padding-bottom: 1em;
+      }
+      .column {
+            float: left;
+            padding: 10px;
+      }
+      .left {
+            width: 25%;
+      }
+      .right {
+            width: 75%;
+      }
+      /* Clear floats after the columns */
+      .row:after {
+            content: "";
+            display: table;
+            clear: both;
+      }
       </style>
       <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css">
       <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
@@ -20,16 +37,16 @@
 </head>
 
 <body>
-<div class="menu">
+<div class="column left">
       <img src="res/header.png" width="90%" />
-<!--       data-height="725"  -->
       <a class="twitter-timeline" 
          data-width="200" 
+         data-height="725"
          data-dnt="true" href="https://twitter.com/Pushpendre89?ref_src=twsrc%5Etfw">Twitter</a>
       <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </div>
 
-<div class="main-content">
+<div class="column right">
 <header class="col-span">      
       <h1 class="title counter-skip">Pushpendre Rastogi</h1>
       <h2 class="subtitle counter-skip">pushpendre at gmail</h2>
