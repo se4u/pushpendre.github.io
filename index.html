@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
       <meta charset="UTF-8" />
@@ -42,7 +43,7 @@
 <body>
 <div class="row">
 <div class="column left">
-      <img src="res/header.png" width="90%" />
+      <img src="res/header.png" width="90%" alt="header png"/>
       <a class="twitter-timeline"
          data-height="725"
          data-dnt="true" href="https://twitter.com/Pushpendre89?ref_src=twsrc%5Etfw">Twitter</a>
@@ -60,12 +61,12 @@
                   </a>
             </p>
             <p><a href="https://www.linkedin.com/in/pushpendre/" >
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/0/01/LinkedIn_Logo.svg" width="100" height="25"></img>
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/0/01/LinkedIn_Logo.svg" width="100" height="25" alt="Linkedin Logo">
                </a>
             </p>
             <p><a href="https://github.com/pushpendre/pushpendre.github.io/blob/master/index.html">Edit this page</a></p>
             <p><a href="https://github.com/pushpendre/pushpendre.github.io/deployments/activity_log?environment=github-pages">See deployment status</a></p>
-
+	    <details><summary>how to edit this page</summary><p>make changes to index.html and validate them using "tidy -o /dev/null index.html"</p></details>
       
 </div>
 
@@ -93,11 +94,11 @@
 <h2>Code Snippets</h2>
 <!--  <details>
             <summary> XXX </summary>
-            <p><pre><code> YYYY </code></pre></p>
+            <p><pre><code> YYYY </code></pre>
       </details> -->
       <details>
             <summary> Interactive pool for running jobs on the side in python. </summary>
-            <p><pre><code> class InteractivePool:
+            <pre><code> class InteractivePool:
     def __init__(self, J):
         import time
         self.J = J
@@ -129,12 +130,12 @@
 
 from concurrent.futures import ProcessPoolExecutor    
 sidejob = ProcessPoolExecutor(max_workers=4).submit
-P = InteractivePool([sidejob(f, i) for i in range(80)]) </code></pre></p>
+P = InteractivePool([sidejob(f, i) for i in range(80)]) </code></pre>
 </details>
 
 <details>
       <summary> Save spark dataframe to sparse scipy arrays </summary>
-      <p><pre><code> from functools import partial
+      <pre><code> from functools import partial
 import pyspark.ml as pm
 from typing import * 
 from scipy.sparse import csr_matrix, vstack, lil_matrix, load_npz, save_npz
@@ -190,12 +191,12 @@ sdf.rdd.repartition(npart).foreachPartition(partial(
 subprocess.getstatusoutput('hadoop -copyToLocal /data/ /home/hadoop/')
 L = glob('data/*.npz')
 F = vstack([load_npz(e) for e in L])
-C = [c for e in L for c in pickle.load(open(e))] </code></pre></p>
+C = [c for e in L for c in pickle.load(open(e))] </code></pre>
 </details>
       
 <details>
       <summary> How to hash check pip files </summary>
-      <p><pre><code> 1. Install virtualenv                                         
+      <pre><code> 1. Install virtualenv                                         
 1. Create workspace, download package.                        
 1. Go where the requirements file is.                         
 1. Create fresh empty environment and activate it             
@@ -212,12 +213,12 @@ python3 -m venv env;  source env/bin/activate
  exit; bash                                                                                                                                                                                           
  python3 -m venv env2; source env2/bin/activate                                                                                                                                                       
  pip install --require-hashes -r requirements.txt
-</code></pre></p>
+</code></pre>
 </details>
 
 <details>
       <summary> hdfs file system functionality exposed to python </summary>
-      <p><pre><code> def hdfs_exists(path, flag='-e'):
+      <pre><code> def hdfs_exists(path, flag='-e'):
     code, output = subprocess.getstatusoutput(f'hadoop fs -test {flag} {path}')
     if code != 0:
         print(output)
@@ -229,12 +230,12 @@ def copyFromLocal(src, dst):
     return subprocess.getstatusoutput(f'hadoop fs -copyFromLocal {src} {dst}')
 
 def copyToLocal(src, dst):
-    return subprocess.getstatusoutput(f'hadoop fs -copyToLocal {src} {dst}') </code></pre></p>
+    return subprocess.getstatusoutput(f'hadoop fs -copyToLocal {src} {dst}') </code></pre>
 </details>
 
 <details>
       <summary> Spark Setup </summary>
-      <p><pre><code> def setup(RUNDATE='2020-07-16', spark_setting_file=None):
+      <pre><code> def setup(RUNDATE='2020-07-16', spark_setting_file=None):
     """ Construct spark session, setup logger, and read YAML files
     from prime-ml-repo in production EMR clusters. After reading yaml files
     format the paths with dates.
@@ -284,12 +285,12 @@ def copyToLocal(src, dst):
         spark.sparkContext.setCheckpointDir("hdfs:///checkpoint/spark/")
     except Exception as exception:
         warnings.warn("Unable to set spark checkpoint directory !")
-    return spark, parameters, logger </code></pre></p>
+    return spark, parameters, logger </code></pre>
 </details>
 
 <details>
       <summary> Common model inspections on binary classification test set</summary>
-      <p><pre><code> def tabulate(label, proba, **kwargs):
+      <pre><code> def tabulate(label, proba, **kwargs):
     """ Compute common statistics on a binary classification problem
     given the true labels and the class probabilities.
     """
@@ -327,12 +328,12 @@ def copyToLocal(src, dst):
 
     R = R.__dict__
     R.update(kwargs)
-    return R </code></pre></p>
+    return R </code></pre>
 </details>
 
 <details>
       <summary> Boilerplate for configuring logger in python </summary>
-      <p><pre><code> import logging
+      <pre><code> import logging
 def setup_logger(file_path=None):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
@@ -356,12 +357,12 @@ def setup_logger(file_path=None):
         logger.addHandler(fh)
         logger.info(f"Initialized logger with FileHandler({file_path})")
 
-    return </code></pre></p>
+    return </code></pre>
 </details>
 
 <details>
       <summary> Java - Python/Numpy Fast Copy-Free Exchange </summary>
-      <p><pre><code> /* Java */
+      <pre><code> /* Java */
 
         short a = 3; // 2
         long b = 5; // 8
@@ -395,20 +396,20 @@ def setup_logger(file_path=None):
         arr1 = np.frombuffer(buf, dtype=np.dtype('int16').newbyteorder('L'), count=1, offset=0)
         arr2 = np.frombuffer(buf, dtype=np.dtype('int64').newbyteorder('L'), count=1, offset=2)
         arr3 = np.frombuffer(buf, dtype=np.dtype('float32').newbyteorder('L'), count=1, offset=10)
-        arr1, arr2, arr3 </code></pre></p>
+        arr1, arr2, arr3 </code></pre>
 </details>
 
 <details>
       <summary> Java - Simple printing function. </summary>
-      <p><pre><code> static void pp(Object format, Object... args) {
+      <pre><code> static void pp(Object format, Object... args) {
         System.out.printf(format.toString(), args);
         System.out.println();
-    } </code></pre></p>
+    } </code></pre>
 </details>
 
 <details>
       <summary> Json encode numpy objects </summary>
-      <p><pre><code> class NumpyEncoder(json.JSONEncoder):
+      <pre><code> class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
@@ -419,20 +420,20 @@ def setup_logger(file_path=None):
                 return int(obj)
             else:
                 return bool(obj)
-        return json.JSONEncoder.default(self, obj) </code></pre></p>
+        return json.JSONEncoder.default(self, obj) </code></pre>
 </details>
 
 <details>
       <summary> List busy EMR machines and the total reserved machines </summary>
-      <p><pre><code> aws emr list-clusters --region us-east-1 --active  > /tmp/tmp1
+      <pre><code> aws emr list-clusters --region us-east-1 --active  > /tmp/tmp1
 jq '.Clusters|.[]|.Id' /tmp/tmp1 -r | xargs -n 1 -I % sh -c 'aws emr list-instances --cluster-id % --instance-states RUNNING --region us-east-1' > /tmp/tmp2
 jq '.Instances | .[] | .InstanceType' /tmp/tmp2 -r | sort | uniq -c
-aws ec2 describe-reserved-instances --region us-east-1 | jq '.ReservedInstances | .[] | [.InstanceType, .InstanceCount, .State]' -c -r | fgrep -v retired | sort </code></pre></p>
+aws ec2 describe-reserved-instances --region us-east-1 | jq '.ReservedInstances | .[] | [.InstanceType, .InstanceCount, .State]' -c -r | fgrep -v retired | sort </code></pre>
 </details>
 
 <details>
       <summary> Excel VBA functions for testing significance of binomial A/B tests. Two-sided ZTest Pvalue from ratios and counts </summary>
-      <p><pre><code> 'Two-sided ZTest Pvalue from counts
+      <pre><code> 'Two-sided ZTest Pvalue from counts
 Public Function CountsZTest(count1, nob1, count2, nob2)
     CountsZTest = RatioZTest(count1 * 1# / nob1, nob1, count2 * 1# / nob2, nob2)
 End Function
@@ -443,12 +444,12 @@ Public Function RatioZTest(p1, nob1, p2, nob2)
     var1 = p_pooled * (1 - p_pooled) * nobs_2xhm
     std_diff = Sqr(var1)
     RatioZTest = Application.WorksheetFunction.Norm_S_Dist(-Abs(diff / std_diff), True) * 2
-End Function </code></pre></p>
+End Function </code></pre>
 </details>
 
 <!-- <details>
       <summary> XXX </summary>
-      <p><pre><code> YYYY </code></pre></p>
+      <pre><code> YYYY </code></pre>
 </details>
  -->
 
@@ -482,11 +483,11 @@ End Function </code></pre></p>
 </details>
 
 <details><summary>Variational characterization of the absolute value function.</summary>
-      <p><iframe src="/ViewerJS/#../res/trivia/variational-characterization-of-absolute-value.pdf" loading="lazy" width="720" height="400"/></p>
+      <p><iframe src="/ViewerJS/#../res/trivia/variational-characterization-of-absolute-value.pdf" loading="lazy" width="720" height="400"></iframe></p>
 </details>
 
 <details><summary>The T distribution and its relation to sampling.</summary>
-      <p><iframe src="/ViewerJS/#../res/trivia/the-t-distribution.pdf" loading="lazy" width="720" height="400"/></p>
+      <p><iframe src="/ViewerJS/#../res/trivia/the-t-distribution.pdf" loading="lazy" width="720" height="400"></iframe></p>
 </details>
 
 </div>
