@@ -1,0 +1,2 @@
+#!/bin/sh
+tidy --warn-proprietary-attributes no -e -q index.html 
