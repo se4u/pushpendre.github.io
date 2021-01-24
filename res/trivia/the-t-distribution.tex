@@ -1,0 +1,28 @@
+\documentclass[preview,border={10 10 10 10}]{standalone}
+\usepackage{amsfonts,amsmath,amssymb,amsthm,graphicx}
+\begin{document}
+The student $t$-distribution with mean zero and $n-1$ degrees of freedom is the distribution of a random variable that is computed as follows
+\begin{equation*}
+    \sqrt{n} \frac{\bar{X} - \mu}{S}
+\end{equation*}
+where $\bar{X}$ is the sample average of $n$ observations and $S$ is their sample standard deviation, and the observations are samples of iid gaussian distributed random variables. I.e. 
+\begin{align}
+\bar{X} &= \frac{\sum X_i}{n}\\
+S &= \sqrt{\frac{\sum(X_i - \bar{X})^2}{n-1}}\\
+X_i &\sim \mathcal{N}(\mu, \sigma^2)
+\end{align}
+
+The variance of the $t$-distribution with $\nu$ d.o.f. is $\frac{\nu}{\nu-2}$ for $\nu > 2$. Which means that when the $t$-distribution arises from $n > 3$ samples then its variance is $\frac{n-1}{n-3}$ otherwise its infinity.
+
+The parameteric (closed-form) definition of the $t$-distribution is given through its PDF.
+\begin{equation}
+    t_\nu(x) = \frac{1}{\sqrt{\nu\pi}}\frac{\Gamma((\nu+1)/2)}{\Gamma(\nu/2)}\big(1 + x^2/\nu\big)^{-(\nu+1)/2}
+\end{equation}
+
+More generally when we divide a gaussian RV by the square root of a independent  $\chi^2$ distributed RV then the $t$-distribution arises. 
+
+The tricky part is in showing that $\bar{X}$ and $S$ which are statistics on the same observations are actually independent random variables under the assumption that the samples are normal iid.
+
+~\\Pushpendre Rastogi\\
+\today
+\end{document}
