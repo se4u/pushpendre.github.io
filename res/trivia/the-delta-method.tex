@@ -1,0 +1,106 @@
+\documentclass[preview,border={30 30 30 30}]{standalone}
+\usepackage{amsfonts,amsmath,amssymb,amsthm,graphicx,url,listings}
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+\newcommand{\h}{\hat{\theta}}
+\begin{document}
+\parskip=5pt plus 1pt
+\begin{center}
+    \Large The Delta Method for Variance of Sample Statistics and hypothesis testing of micro-averaged plugin estimates.
+\end{center}
+Pushpendre Rastogi\\
+\today
+
+The delta method is used to estimate the variance of (a function of a asymptotically normally distributed estimator, say $E$) in terms of the variance of $E$.
+
+For example, say we want to estimate a function of two population parameters $\theta_1$ and $\theta_2$. We have collected $n$ samples and we used those samples to compute the estimators $\h_1$ and $\h{_2}$. Also our procedure for computing $\h_1$ and $\h_2$ is consistent, in other words $\h_1, \h_2$ are consistent. And $\h_1, \h_2$ are jointly asymptotically normally distributed around the true values. And we know the variance of the estimators $(\h_1, \h_2)$. Then we can compute the variance of the plugin estimator $f(\h_1, \h_2)$ 
+
+Even more concretely, say we want to estimate the "mean order value" over all customers in last 12 months. Our transaction data is collected in terms of single orders, which we'll need to group by customers and then aggregate. So for each customer we will observe a two dimensional random variable, the first dimension is the number of orders, and the second dimension is the order value  summed over all orders. Now there are two ways of estimating the \textbf{population average order value}, the so-called \textit{micro averaging} method and the second one which is the \textbf{macro-averaging} method.
+
+\begin{enumerate}
+    \item \textbf{micro-average} First sum the total order value over all customers, then divide that by the total orders over all customers. This is akin to first estimating the \textbf{mean order value per customer} $\h_1$ and dividing it by \textbf{mean number of orders per customer} $\h_2$, and then computing the plugin estimator $f(\h_1, \h_2) = \h_1 / \h_2$.
+    \item \textbf{macro-average} For each customer first divide the total value by the total number of orders, and then take the average of that ratio. This approach first estimates a ratio for each customer -- which can be very noisy -- due to small large variation in the denominator and then averages the ratios.
+\end{enumerate}
+
+Another example, is that say we have customers coming to us repeatedly in different sessions over a period of time. For each session we measure their engagement with our service. So for each customer we will observe a tuple of total sessions, and total engagement across all sessions, and then we want to estimate the mean engagement over all sessions. The same consideration of micro-vs-macro averaging will apply here as well.
+
+Now the \textbf{Delta method} can be used to estimate the variance of the \textbf{micro-average} estimator, and the result is as follows.
+
+Let $\hat{\boldsymbol\theta}$ denote a vector of estimators with asymptotic distribution $\mathcal{N}(\boldsymbol\theta, \boldsymbol\Sigma)$, then the asymptotic distribution $f(\theta) = \mathcal{N}(f(\boldsymbol\theta), {\nabla}\kern-0.25em f (\boldsymbol\theta)^T \kern0.25em \boldsymbol\Sigma \kern0.25em{\nabla}\kern-0.25em f (\boldsymbol\theta)$
+
+Finally in practice this estimate of the variance can be used to normalize the $z$-score for comparing two treatments via a $z$-test.  
+
+\section{Simulation}
+Consider a population where the number of orders per customer is poisson distributed with maximum value of $100$, and the value per order has the log-normal distribution with parameters having uniform prior.  The variance in micro average method is 2/3 of the variance of the macro-average method. Therefore, there is benefit in using the delta method.
+Better code is given at \url{https://stats.stackexchange.com/questions/398436/}
+\begin{lstlisting}[language=R]
+
+library(ggplot2)
+> den4 <- density(rgamma(10000, shape=4, rate=1))
+> den22 <- density(rgamma(10000, shape=2, rate=1) 
+    + rgamma(10000, shape=2, rate=1))
+> (ggplot(data=data.frame(x=den4$x, y=den4$y), 
+         aes(x=x, y=y)) 
+   + geom_point() 
+   + geom_point(data=data.frame(x=den22$x, y=den22$y), color="red")
+   + theme_classic())
+
+# The difference between macro averaging and micro averaging
+# does not matter, if we get enough counts per customer.
+# i.e. k <- pmin(rpois(n, 10), 100)
+# The difference between macro and micro also doesn't matter 
+# if the order scale is the same for each customer.
+# i.e. v <- sapply(k, function(x) rgamma(1, 2 * x, rate=1))
+# [1] 8.223577 8.230807 2.169754
+# At a cursory glance it may seem that the delta method is
+# overkill for the ratio metrics.
+# but becomes much more significant when there are not a 
+# lot of purchases per customer, as is common in e-commerce.
+# And we are doing A/B testing, where a 10\% reduction in 
+# standard deviation means a 10\% reduction in the cost 
+# of running an experiment.
+
+trial1 <- function() { 
+ n <- 10000
+ k <- pmin(rpois(n, 1), 100)
+ v <- sapply(k, function(x) if(x==0) 0 else sum(sapply(1:x, function(xx) rlnorm(1, meanlog=runif(1, min=0.1, max=2), sdlog=runif(1, min=0.1, max=2)))))
+ mean(v)/mean(k)
+}
+trial2 <- function() { 
+ n <- 10000
+ k <- pmin(rpois(n, 1), 100)
+ v <- sapply(k, function(x) if(x==0) 0 else sum(sapply(1:x, function(xx) rlnorm(1, meanlog=runif(1, min=0.1, max=2), sdlog=runif(1, min=0.1, max=2)))))
+ mean(v[k > 0] / k[k > 0])
+}
+r1 <- sapply(1:100, function (x) trial1())
+r2 <- sapply(1:100, function (x) trial2())
+print(c(mean(r1), mean(r2), sqrt(var(r1)), sqrt(var(r2))))
+
+[1] 8.0904948 8.1147581 0.4277769 0.5947738
+\end{lstlisting}
+\end{document}
