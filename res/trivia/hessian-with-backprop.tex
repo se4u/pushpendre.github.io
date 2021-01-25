@@ -1,0 +1,111 @@
+\documentclass[preview,border={30 30 30 30}]{standalone}
+\usepackage{amsfonts,amsmath,amssymb,amsthm,graphicx,url,listings}
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+\newcommand{\h}{\hat{\theta}}
+\begin{document}
+\parskip=5pt plus 1pt
+\begin{center}
+    \Large Hessian with Backprop.
+\end{center}
+Pushpendre Rastogi\\
+\today
+
+It is possible to compute the action of the hessian of a function on an input vector. Let $\theta \in \mathbb{R}^d$ and let $f: \mathbb{R}^d \rightarrow \mathbb{R}$.
+
+Let $J = \partial\kern-1pt f$ and $H = \partial^2\kern-2pt f$ be the jacobian and hessian function of $f$. $H(\theta)$ is itself a linear operator and we'll use $H_\theta$ to denote this operator. 
+
+The trick is that $$H_\theta \times \nu = \frac{\partial (J_\theta^T \times \nu)}{\partial \theta}.$$ The proof is trivial by just expanding the term on the r.h.s using the product rule and noting that $\frac{\partial \nu}{\partial \theta} = 0$.
+
+This can be implemented in \textsc{Jax} as follows
+
+\begin{lstlisting}[language=python]
+from scipy.optimize import (
+  rosen as scipy_rosen, rosen_hess as scipy_rosen_hess)
+import jax
+import jax.numpy as jnp
+
+x = jnp.array([2.2, .21])
+direction = jnp.array([1.2, 3.1])
+
+def f(x):
+    return (100.0 * (x[1:] - x[:-1]**2.0)**2.0 + (1 - x[:-1])**2.0).sum()
+    
+J = jax.grad(f)
+
+def Jproduct(x, direction):
+    return J(x).dot(direction)
+    
+H_action = jax.grad(Jproduct)
+
+
+assert f(x) == scipy_rosen(x), "rosenbrock function impl wrong."
+gold_action = scipy_rosen_hess(x).dot(direction)
+trick_action = H_action(x, direction)
+print(trick_action - gold_action)
+assert(jnp.linalg.norm(trick_action - gold_action) 
+      / jnp.linalg.norm(gold_action) < 1e-6)
+
+# [-4.8828125e-04 -6.1035156e-05]
+\end{lstlisting}
+
+The second trick is the hutchinson method for extracting the diagonal values of a matrix just by computing the action of the matrix on Rademacher distributed input values. Rademacher R.V. are sampled from a uniform p.m.f. on $\{-1, 1\}^d$. We can see this is in JAX as 
+
+\begin{lstlisting}[language=python]
+import numpy as np
+def rademacher(n, d):
+    return np.random.choice([-1, 1], size=n*d).reshape((n,d))
+
+def approx_diag(x, samples=100):
+    return sum(H_action(x, z) * z for z in rademacher(samples, 2)) / samples
+
+%time print(np.diag(scipy_rosen_hess(x)))
+%time print(approx_diag(x, 30))
+
+# [5726.0005  200.    ]
+# CPU times: user .445 ms, sys: .081 ms, total: .526 ms
+# Wall time: .464 ms
+
+# [5667.3335   141.33333]
+# CPU times: user 1 s, sys: 198 ms, total: 1.2 s
+# Wall time: 1.03 s
+\end{lstlisting}
+
+See \url{rise.cs.berkeley.edu/projects/adahessian/} and google for adahessian and pyhessian for more details and references.
+
+Now these noisy hessian computations can be used inside optimization methods. The adahessian method is a full-fledged optimization algorithm proposed in "ADAHESSIAN: An Adaptive Second Order Optimizer for Machine Learning" based on this idea. See \url{arxiv.org/pdf/2006.00719.pdf}
+
+\section{Applying Hessian-By-Backprop to Trust Region methods}
+{\color{red}TODO}
+
+Well-known methods such as the trust-region method can also be implemented using the \texttt{H\_action} operator.
+
+%% Trust-regions, The Levenberg-Marquardt Algorithm
+%% https://web.archive.org/web/20200414204913/https://www.gnu.org/software/gsl/doc/html/nls.html
+
+\end{document}
