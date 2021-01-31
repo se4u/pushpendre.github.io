@@ -1,0 +1,79 @@
+\documentclass[preview,border={30 30 30 30}]{standalone}
+\usepackage{amsfonts,amsmath,amssymb,amsthm,graphicx,url,listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+\newcommand{\h}{\hat{\theta}}
+\begin{document}
+\parskip=5pt plus 1pt
+\begin{center}
+    \Large Basics of ZeroMQ
+\end{center}
+Pushpendre Rastogi\\
+\today
+See \url{https://zguide.zeromq.org/docs/chapter1/} for more details.
+
+ZeroMQ is a wrapper on top of TCP (and also three other transport protocols). It provides sockets, but these sockets come in pairs that map more closely to real applications. Also one ZeroMQ socket can have multiple underlying connections, which means that one ZeroMQ socket is actually a container for multiple underlying trasport layer level sockets.
+
+There are three different types of sockets in ZeroMQ
+\begin{enumerate}
+    \item REQuest - REPly Socket pair
+    \item PUBlist - SUBscribe socket pair
+    \item PUSH - PULL socket pair
+\end{enumerate}
+
+The basic steps for using ZeroMQ are:
+\begin{enumerate}
+    \item \textbf{Make context}
+    \item \textbf{Make socket}
+    \item \textbf{Configure Socket}
+    \item \textbf{Plug in} Call bind the socket to transport layer address and port if the process is a server and wants to make itself visible to others. Otherwise call connect. bind associates the socket with its local address, that's why server side bind s, so that clients can use that address to connect to server. connect is used to connect to a remote server address, that's why it is client side, connect to server is used. The parameter to bind and connect are protocol dependent. See \hyperref{https://stackoverflow.com/questions/6024003/why-doesnt-zeromq-work-on-localhost}{this} link for details on tcp.
+    \item \textbf{Data IO} Use the sockets in the application. All IO happens asynchronously on its own thread(s). The rule of thumb is to one IO thread per 1 GBPS.
+    \item \textbf{Destruction}
+\end{enumerate}
+
+In each language the ZeroMQ api provides functions that implement these steps. So you can write a worker in Rust or C++ and a client in python. The difference between REP and REQ in the table below comes from making a server in C++ and a client in Python. 
+
+
+
+
+\begin{tabular}{p{1.5cm}|p{4.5cm}|p{4.5cm}}
+    Step             & C++ & Python \\\hline
+    Make context     & \texttt{\#include <zmq.hpp>; zmq::context\_t context (1);} & \texttt{import zmq; context = zmq.Context()}\\\hline
+    Make socket      & \texttt{zmq::socket\_t socket (context, ZMQ\_REP);} & \texttt{socket = context.socket(zmq.REQ)}\\\hline
+    Configure socket & \\\hline
+    Plug in          & \texttt{socket.bind ("tcp://*:5555");} & \texttt{socket.connect
+    ("tcp://localhost:5555")
+}\\\hline
+    Data IO &  \texttt{zmq::message\_t request; socket.recv (\&request); zmq::message\_t reply (5); memcpy (reply.data (), "world", 5); socket.send(reply)}& \texttt{    socket.send(b"Hello"); message=socket.recv()} \\\hline
+    Destroy & \texttt{zmq\_close (socket);
+    zmq\_ctx\_destroy (context);} \\\hline
+\end{tabular}
+% \begin{lstlisting}[language=python]
+% \end{lstlisting}
+
+\end{document}
