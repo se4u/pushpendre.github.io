@@ -1,0 +1,479 @@
+\documentclass[preview,border={30 30 30 30}]{standalone}
+\usepackage{amsfonts,amsmath,amssymb,amsthm,graphicx,url,listings}
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+% ------ MACROS -------- %
+\usepackage{algorithmic}
+\newcommand{\myalg}[1]{\fbox{\parbox{\linewidth}{\begin{algorithmic}#1\end{algorithmic}}}}
+\newcommand{\detour}[1]{\myalg{\STATE \textsc{Detour}\\\hrulefill 
+\STATE #1}}
+
+\newcommand{\h}{\hat{\theta}}
+\newcommand{\mycol}[1]{\multicolumn{2}{c}{\textbf{#1}}}
+\usepackage{hyperref} 
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+\begin{document}
+\parskip=5pt plus 1pt
+\begin{center}
+    \Large The VW FAQ
+\end{center}
+Pushpendre Rastogi\\
+v1: 2 Feb 2021\\
+last update: \today
+\tableofcontents
+\section{Which ML problems does VW handle?}
+VW can handle the following  tasks for online learning and contextual bandits:
+\begin{itemize}
+    \item Importance weighted Multiclass classification: Here the label is an integer encoded class along with a weight. the weight has default value of 1. when not specified.
+    \item Multilabel classification: Here the label is a comma separated list of integer encoded class variables.
+    \item Cost sensitive classification: Here the label is a space separated list of pairs. Each pair has two values and a colon in between. The class and the cost of predicting that class. Higher costs are worse.
+    \item Contextual Bandits: The label is a space-delimited-list of colon-delimited-triples. Each triple specified the action taken, the cost incurred, and the probability which the exploration policy used to choose that action.
+    \item Contextual Bandit Evaluation: In evaluation mode we are evaluating a new policy against the logging data collected by a logging policy. Here the label is \texttt{action (<action>:<cost>:<probability>)*}
+    \item Conditional Contextual Bandits (CCB): 
+    \item Continuous arms 
+    \item Slates
+\end{itemize}
+
+\section{What are Filter Trees / Error Correcting Tournaments? How can I train a tree online?}
+
+\subsection{ECT}
+The filter tree/error correcting tournament was designed by Beygelzimer, Langford, and Ravikumar et al. in \url{https://arxiv.org/pdf/0902.3176v4.pdf}. They are useful (only) if you have a very big number of output labels (classes), let's say N=1000. 
+You can imagine Filter trees (which are the basis of ECT) as a decision tree where in each node you ask whether the example belongs to one set of labels or another set of labels (using all the features, unlike original decision trees). With N>1000, OAA is too slow (and even the accuracy is low), you should try ECT (or \verb|--log_multi| or \verb|--csoaa_ldf| in VW, if you can preselect a smaller number of labels which are relevant for each example). Three really useful references are
+\begin{enumerate}
+    \item \href{https://cilvr.cs.nyu.edu/diglib/lsml/logarithmic.pdf}{Slides}
+    \item \href{https://stackoverflow.com/questions/24607514/error-correcting-tournaments-ect-multi-class-classification-in-vowpal-wabbit}{SO}
+    \item \href{https://arxiv.org/pdf/0902.3176v4.pdf}{arxiv paper}
+\end{enumerate}
+
+\subsection{Logarithmic Time Online Multiclass prediction: LOMTree}
+\url{https://arxiv.org/pdf/1406.1822.pdf}
+
+\subsection{Contextual Memory Trees}
+\url{https://arxiv.org/pdf/1807.06473.pdf}
+
+\section{What is a learning reduction?}
+A learner - i.e. a reduction - is a akin to a transformer in a scikit learn pipeline, but its more general. A reduction in VW can do feature pre-processing, but it can also transform the labels, the link function, and the loss function to change one problem into another.
+
+
+\fbox{\parbox{\linewidth}{
+\textbf{DETOUR: Meanings of some common abbreviations}\\~.\hrulefill
+\begin{description}
+\item[csoaa] Cost sensitive One Against All
+\item[adf] Action dependent feature
+\item[ldf] Label dependent feature
+\end{description}
+}}
+
+See \url{https://github.com/VowpalWabbit/vowpal_wabbit/wiki/What-is-a-learner%3F}
+
+For example, here's the pseudo-code for the csoaa algorithm.
+\myalg{
+\STATE Initial predictor $f_1(x)$
+\FOR{$t$ in $1$ to $T$} 
+\STATE Observe $\{x_{t,i}\}_{i=1}^K$. The $i$ indexes over actions, so basically these are action dependent features.
+\STATE Predict class $i_t = \arg \min_{i=1}^K f_t(x_{t,i})$
+\STATE Observe costs $\{c_{t,i}\}_{i=1}^K$
+\STATE Update $f_t$ using online least-squares regression on data $\{x_{t,i}, c_{t,i}\}_{i=1}^K$
+\ENDFOR
+}
+
+\section{How does Learning to Search and the Credit Assignment work in VW?}
+
+The learning to search sub-system basically is a system for imitation learning where we have an episodic sequential decision problem, and annotated gold-standard outputs are available for every step of the sequential decision problem, and we want to avoid the gap between training-and-testing where at training time we provide perfect trajectories to the imitation learner, but at test time, the classifier will have to rely on possibly wrong intermediate predictions. 
+
+The L2S system depends on some base algorithms for imitation learning.
+\subsection{Imitation Learning Base algorithms}
+The oldest one is Searn (2006), and then Dagger (2011), and then Aggrevate (2014), and finally Lols(2015). references are linked 
+\href{https://github.com/VowpalWabbit/vowpal_wabbit/wiki/Learning-to-Search-Sub-System}{here}. For example, the LOLS algorithm works as follows in a slightly unrealistic setting.
+
+\myalg{
+\STATE given a dataset of labeled examples and $\beta \ge 0$ which is a mixture parameter. The labels suggest a reference policy called $\pi^{\text{ref}}$. For example, when we are doing POS-tagging the reference policy outputs whatever label was assigned to a word.
+\FOR{instance $i$ in 1 to N}
+\STATE Initialize $\Gamma$. It is an example specific "augmented" dataset used to improve our current learnt estimate of the behavior policy.
+\STATE Let $\hat{\pi}_1$ be our guess of some good initial policy.
+\FOR{all $t$ in 0 to $T-1$}
+\STATE Roll-in by executing $\hat{\pi}_i$ for $t$ rounds to reach $s_t$
+\STATE Generate a feature vector $\phi_{i,t}$ that describes the $i$th example at step $t$.
+\FOR{all actions $a$ that are possible at this step}
+\STATE take action $a$
+\STATE pick whether to use the reference policy $\pi^{\text{ref}}$ or $\hat{\pi}_i$ with probability $\beta$.
+\STATE Execute the picked policy for the remaining $T-t-1$ steps. and note does the cost $c_{i,t}(a)$
+\ENDFOR
+\STATE Now we have a vector of observed costs $c_{i,t}(a)$ and feature vector $\phi_{i,t}$. Add this full-feedback example to $\Gamma$. 
+\ENDFOR
+\STATE Update $\hat{\pi}_i$ using examples from $\Gamma$ to generate $\hat{\pi}_{i+1}$
+\ENDFOR
+\STATE Return an ensemble of policies from $\hat{\pi}_1, \ldots, \hat{\pi}_{N+1}$
+}
+
+The LOLS algorithm can be modified to the structured contextual bandit setting as well. See Algorithm 2 in the LOLS paper. It's a small modification where bandit-feedback is collected for an example, i.e. instead of gathering $T$ full-feedback examples, only $1$ bandit-feedback example is gathered.
+
+The gist is that "roll-in, roll-out" will learned policy is bad, and "roll-in" with reference policy is bad, therefore the only choice is "roll-in" with learned policy and "roll-out" with a mix of reference policy and learned policy.
+
+\subsection{Credit Assignment Compiler}
+The Credit assignment compiler is just a general interface for implementing imitation learning algorithms, its like an api, and a few common optimizations that are packaged together. 
+
+The basic idea is that if we have a policy that executes episodically and we have true-reference labels available then we can do imitation learning of such a sequential execution using the following tricks. Basically it wraps two method $PREDICT$ and $LOSS$ and passes it to the runtime function $MYRUN$. 
+
+For every time step, it generate a single cost-sensitive classification example; its features are $ex[t0]$, and there
+are $M(ex[t0])$ possible labels (=actions). 
+
+\myalg{
+\STATE General Learn To Search: The Credit Compiler\\\hrulefill
+\STATE \textbf{function} MYRUN(X, PREDICT, LOSS)
+\FOR{$t$ in $1$ to $len(X)$} 
+\STATE $Y[t] := PREDICT(x, y, tag, condition)$
+\ENDFOR
+\STATE return LOSS, Y
+\STATE 
+\STATE \textbf{function} LEARN
+\STATE $T := 0$
+\STATE $PREDICT2(x, y) := \{T++; ex[T-1] := x; cache[T-1] = F(x,y,rollin)\}$
+\STATE eexcute $MYRUN(X, PREDICT2, LOSS)$
+\FOR{$t'$ in $1$ to $T$}
+\STATE Let $t = 0$
+\FOR{$a_0$ in $1$ to $A(ex[t_0])$}
+\STATE $PREDICT2 = \{t++  ; return ...\}$
+\STATE $LOSS2 := \{losses[a_0] += val$
+\STATE $MYRUN(X, PREDICT2, LOSS2)$
+\ENDFOR
+\ENDFOR
+}
+
+\section{How do interactively run VW?}
+
+
+\section{How do I inspect the trained model?}
+
+
+\section{ How do I run VW for a specific ML problem?}
+\url{https://github.com/VowpalWabbit/vowpal_wabbit/wiki/Input-format}
+
+\section{How can I use VW for online learning?}
+
+\section{What model classes does VW implement for online learning?}
+
+\section{What are invariant, normalized and adaptive learning rates in VW?}
+\subsection{Invariant}
+Invariant means that the function learnt using importance weights will be the same as duplicating the samples in the input. For example, if we have a sample and an importance weight of 2 $(x, y), 2$ then the model that we learn should be the same as feeding the example twice to the SGD learning algorithm
+
+\section{What is the easiest way to use VW? Some example commands?}
+
+Here are some examples commands from \url{http://www.machinedlearnings.com/2013/02/one-louder.html}
+
+\begin{lstlisting}[language=bash]
+% less Makefile
+SHELL=/bin/zsh
+CXXFLAGS=-O3
+ 
+.SECONDARY:
+ 
+all:
+ 
+%.check:
+        @test -x "$$(which $*)" || {                            \
+          echo "ERROR: you need to install $*" 1>&2;            \
+          exit 1;                                               \
+        }
+ 
+dna_train.%.bz2: wget.check
+        wget ftp://largescale.ml.tu-berlin.de/largescale/dna/dna_train.$*.bz2
+ 
+quaddna2vw: quaddna2vw.cpp
+ 
+quaddna.model.nn%: dna_train.lab.bz2 dna_train.dat.bz2 quaddna2vw vw.check
+        time paste -d' '                                        \
+            <(bzcat $(word 1,$^))                               \
+            <(bzcat $(word 2,$^) | ./quaddna2vw) |              \
+          tail -n +1000000 |                                    \
+        vw -b 24 -l 0.05 --adaptive --invariant                 \
+          --loss_function logistic -f $@                        \
+          $$([ $* -gt 0 ] && echo "--nn $* --inpass")
+ 
+quaddna.test.%: dna_train.lab.bz2 dna_train.dat.bz2 quaddna.model.% quaddna2vw vw.check
+        paste -d' '                                             \
+          <(bzcat $(word 1,$^))                                 \
+          <(bzcat $(word 2,$^) | ./quaddna2vw) |                \
+        head -n +1000000 |                                      \
+        vw -t --loss_function logistic -i $(word 3,$^) -p $@
+ 
+quaddna.perf.%: dna_train.lab.bz2 quaddna.test.% perf.check
+        paste -d' '                                             \
+          <(bzcat $(word 1,$^))                                 \
+          $(word 2,$^) |                                        \
+        head -n +1000000 |                                      \
+        perf -ROC -APR
+\end{lstlisting}
+\section{What are the VW input options}
+An even more comprehensive list of arguments is here \url{https://github.com/VowpalWabbit/vowpal_wabbit/wiki/Command-line-arguments}
+
+\begin{tabular}{r|p{8cm}}
+    Option & Description \\\hline
+    \multicolumn{2}{c}{\textbf{Input Options}}\\\hline
+    \verb|-d, -data <f>| & The file to read data from, If multiple flags are given then all files will be read. \\
+    \verb|-daemon|&Run as a server\\
+    \verb|-port <p>|&The port for the server.\\
+    \verb|-passes <n>|&Number of passes to use for online learning.\\
+    \verb|-c [-cache]|&Tell VW to build a cache of input features (or to use one if it exists)\\
+    \verb|-cache_file <fc>|&Use the fc cache file. Multiple: Use all, Missing: Create. Multiple+Missing: Concatenate\\
+    \verb|-compressed|& Gzip compress the cache file.\\\hline
+    \multicolumn{2}{c}{\textbf{Output Options}}\\\hline
+    \verb|-p <po>|&\verb|predictions| File to dump predictions into.\\
+    \verb|-r <ro>|&File to output unnormalized predictions into.\\
+    \verb|-sendto <host:port>|&Relay the input examples to host:port\\
+    \verb|-audit|&Print detailed information about (feature name, feature index, feature value, weight value)\\
+    \verb||&\\\hline
+    \multicolumn{2}{c}{\textbf{Example Featurization and Ommission Options}}\\\hline
+    \verb|-t [-testonly]|&\\
+    \verb|-q <ab>|& \verb| [-quadratic] |Cross every feature in namespace $a*$ ($*$ is a wildcard) with every feature in namespace $b*$\\
+    \verb|-ignore <a>|&Remove a namespace and all features in it.\\
+    \verb|-noconstant|&\\
+    \verb|-sort_features|&Sort features for small cache files.\\
+    \verb|-ngram <N>|&Generate $N-$grams.\\
+    \verb|-skips <S>|&Generate $N$-grams with $S$ skips.\\
+    \verb|-hash all|& hash even integer features.\\\hline
+    \multicolumn{2}{c}{\textbf{Learning Rate/Update Rule Options. See gd.cc}}\\\hline
+    \verb|<d=1>|&\verb|decay_learning_rate|\\
+    \verb|-initial_t <i=1>|& The initial time step\\
+    \verb|-power_t <p=0.5>|& The power used to anneal the learning rate. If we are trying to track a changing system then use \verb|power_t = 0| if its really iid then \verb|power_t = 1| else $0.5$. \\
+    \verb|-l <l=10>|& The learning rate\\ 
+    \verb|-loss_fuction|& squared, logistic, hinge etc. The "classic" loss function is actually squared but it does basic "sgd". This option has been renamed to a flag like "sgd". \\\hline
+    \multicolumn{2}{c}{\textbf{Learn Weight Options.}}\\\hline
+    \verb|-b <b=18>|& \verb|bit_precision|. Essentially the number of bits used for hashing. This can be thought of as the log of the total number of features. But if we actually start filling this completely then there will be a lot of collisions.\\
+    \verb|-i <ri>|& The initial regressor  weight value. Multiple $\implies$ Average. This seems to be the same as \verb|-initial_weight|\\
+    \verb|-f|& file to store final weight values in.\\
+    \verb|-readable_model |& As $-f$, but in text.\\
+    \verb|-save_per_pass|& Save the model after every pass over data.\\
+    \verb|-random_weights <r>|& Make initial weights random. Particularly this is useful for LDA.\\
+    \verb|passes|&\\
+    \verb|holdout_off|&\\
+    \verb|holdout_period|&\\
+    \verb|noconstant|&\\\hline
+    \multicolumn{2}{c}{\textbf{Contextual Bandit Options, including warm-start. \href{https://github.com/VowpalWabbit/vowpal_wabbit/wiki/Contextual-Bandit-algorithms}{Detail wiki}}}\\\hline
+    \verb|cb_type|&These specify the policy evaluation approach. E.g. \verb|ips, dr, dm, mtr|. \verb|mtr| works with \verb|cb_adf| but hasnt been implemented for \verb|cb| \verb|mtr| may be the best method for learning a policy.\\
+    CB Learning& \verb|cb, cb_explore, cb_explore_adf, cb_adf|. The \verb|cb| contextual bandit module allows us to optimize predictor based on already collected data, or contextual bandits without exploration. The basic \verb|cb| algorithm reduces the problem to cost-sensitive multiclass classification when we only observe costfor 1 action/example. OTOH the cb\_explore method is used when the maximum number of actions is known ahead of time. The cb\_explore\_adf is most general and allows the set of actions to change and to have rich action dependent features for each action. The ADF algorithm builds upon the label dependent features learner inside VW. See \url{https://hunch.net/~jl/interact.pdf}. The explore flags are online learning and the non-explore flags are off-policy learning.\\
+    CB Exploration& \verb|first, epsilon, bag, cover, softmax|. The default is epsilon-greedy. The cover algorithm is not supported in the ADF mode.\\
+    \hline
+    \multicolumn{2}{c}{\textbf{Settings for Basic and Cost-sensitive  Multiclass Classification}}\\\hline
+    \verb|oaa|&one against all\\
+    \verb|ect|&error correcting tournament / filter tree.\\
+    \verb|csoaa|& \textbf{Default cost-sensitive classifier}. Cost sensitive one against all (reduction to regression)\\
+    \verb|wap|& Weighted all pairs (reduction to weighted binary classification)\\
+\end{tabular}
+
+\section{What is the multiline LDF format?}
+Copied from \url{http://users.umiacs.umd.edu/~hal/tmp/multiclassVW.html}
+
+suppose you have four document labels (inspired by a dataset due to Andrew McCallum) that talk about automobiles or airplanes. But some are talking about real automobiles (or airplanes) and some are talking about toy automobiles (or airplanes). Thus the four labels are: RealAuto ToyAuto RealAir ToyAir (call them 1, 2, 3, 4 in that order). You might believe that it's actually useful to share parameters across the classes. For example, when you have a basic feature "f" on an example with label RealAuto, you might want to have three version of "f" available for classification: "Real\_f", "Auto\_f" and "RealAuto\_f". If you use the normal support for cost-sensitive classification, you'd only get the last of these.
+
+The ldf format was invented to cope with problems like this. The easiest way to specify ldf example is in a multiline format. This means that each label gets its own line in the input file, and blank lines separate examples. For instance, you could have something like the following as a valid two-example dataset for the above problem:
+
+\begin{verbatim}
+ 1:0 | Real_f Auto_f RealAuto_f
+ 2:1 | Toy_f  Auto_f ToyAuto_f
+ 3:1 | Real_f Air_f  RealAir_f
+ 4:1 | Toy_f  Air_f  ToyAir_f
+ 
+ 1:1 | Real_g Auto_g RealAuto_g
+ 2:1 | Toy_g  Auto_g ToyAuto_g
+ 3:0 | Real_g Air_g  RealAir_g
+ 4:1 | Toy_g  Air_g  ToyAir_g
+\end{verbatim}
+
+If this data is in csldf.txt, you can train with:
+
+\verb|vw --csoaa_ldf multiline < csldf.txt|
+
+If you get a warning about ring size when running in ldf mode, it means that you have a multiline example that contains more lines than VW is willing to hold in memory at once. You can fix this by adding "--ring\_size 1024" or something like that (the default is 256). Just make sure this number is greater than the maximum number of labels for any given example.
+In ldf mode, having shared features for WAP or classifier-based OAA is useless: the predictions are all based on differences of feature vectors, and shared features will cancel each other out.
+
+\section{How to warm-start VW?}
+\url{https://github.com/VowpalWabbit/vowpal_wabbit/wiki/Warm-starting-contextual-bandits}
+\url{https://arxiv.org/pdf/1901.00301.pdf}
+
+
+
+\section{How do Normalized, Adaptive, Invariant updates in VW work?}
+Normalized, adaptive, and invariant updates are improvements over classic SGD for online learning that were built over the course of two papers.
+
+\begin{enumerate}
+    \item Normalized online learning by Ross, Mineiro and Langford
+    \item Online Importance Weight Aware Updates by Karampatziakis and Langford
+\end{enumerate}
+
+The basic normalized SGD works as follows
+
+\myalg{
+\STATE \textsc{Normalized SGD}\\\hrulefill
+\STATE Initially $w_i = 0, s_i = 0, N = 0$
+\FOR{each timestep $t$}
+\FOR{each i, if $|x_i| > s_i$}
+\STATE $s'_i := |x_i|; w_i := w_i s_i^2 / {s'}_i^2; s_i := s'_i$
+\ENDFOR
+\STATE $\hat{y} = \sum_i w_i x_i$
+\STATE $N := N + \sum_i \frac{s_i^2}{s_i^2}$
+\FOR{each $i$}
+\STATE $w_i := w_i - \eta_t \frac{t}{N} \frac{1}{s_i^2} \frac{\partial L(\hat{y}, y)}{\partial w_i}$
+\ENDFOR
+\ENDFOR
+}
+
+The adaptive variant of this update rule works by accumulating the square of the gradient, also it linearly scales the weights instead of as a square of the ratio.
+
+
+\myalg{
+\STATE \textsc{Normalized Adaptive SGD}\\\hrulefill
+\STATE Initially $w_i = 0, s_i = 0, G_i = 0, N = 0$
+\FOR{each timestep $t$}
+\FOR{each i, if $|x_i| > s_i$}
+\STATE $s'_i := |x_i|; w_i := w_i s_i / {s'}_i; s_i := s'_i$
+\ENDFOR
+\STATE $\hat{y} = \sum_i w_i x_i$
+\STATE $N := N + \sum_i \frac{s_i^2}{s_i^2}$
+\FOR{each $i$}
+\STATE $g_i := G_i + \big(\frac{\partial L(\hat{y}, y)}{\partial w_i}\big)^2$
+\STATE $w_i := w_i - \eta_t \sqrt{\frac{t}{N}} \frac{1}{s_i \sqrt{G_i}} \frac{\partial L(\hat{y}, y)}{\partial w_i}$
+\ENDFOR
+\ENDFOR
+}
+
+\detour{
+\textbf{Reasoning behind dividing by square of the scale}
+
+The input features have units. Let $x_i$ be the base unit of feature $i$. To maintain the same prediction, when we double the feature $i$, we must halve the weight $w_i$, therefore $w_i$ has unit $1/x_i$. But the gradient has the unit of $x_i$ (this is most easily seen for linear predictors $\langle w \cdot x \rangle$. Therefore when we do the update we are adding $1/x_i + x_i$ unitwise which is not good.
+
+Therefore to handle this we do normalization since $x_i$ become close to $1$ so units are less of an issue. And we choose $x_i$ on a similar scale to $x_j$ so unit mismatch across features doesn't kill us. But the basic fix to this is to create per feature learning rates that divide by the square of the average gradients.
+
+Now the square of the average gradients create their own problem so we again have to normalize.
+}
+
+\textbf{The importance weighted updates} with invariance property were defined in the paper "Online Importance Weight Aware Updates" \url{https://arxiv.org/pdf/1011.1576.pdf} and they work as follows. The assumption is that our predictor is linear -- maybe followed by a link function -- but mainly linear. The loss function maybe "Squared" or "Logistic", "Hinge", "Logarithmic" or "Expoenntial" or some other loss function. But the main thing is that the loss function takes the hypothesis $p = x^t w$ and a true value $y$. Let $g(p) = \frac{\partial l}{\partial p}\Big|_{p,y}$ Because of this composition the gradient of the loss for a single example will be $g(p) \times x$. Now say that we present the same example $(x,y)$ two times starting from parameter $w_1$ then the final value $w_3$ will be computed as 
+\begin{align}
+    w_2 &= w_1 - \eta g(w_1^T x) x \\
+    w_3 &= w_2 - \eta g(w_2^T x) x 
+\end{align}
+Therefore if we repeat this process $k$ times then $w_{k+1} = w_k - \eta g(w_k^T x) x = w_1 - x \eta \sum_{i=1}^k g(w_i^T x) $. 
+
+Let $s(k) =\eta \sum_{i=1}^k g(w_i^T x)$. Therefore we can say that $$s(k+1) = s(k) + \eta g\big( (w_1 - x s(k))^T x \big)$$. This is the core difference equation at the heart of the technique. They then generalize this difference equation to an ODE and also propose to handle varying learning rates to get 
+\[
+s'(h) = \eta_t(h) g\big( (w_t - s(h)x _t)^Tx \big)
+\]
+\subsection{How does everything work together?}
+The two types of updates are intricately merged to work together. The basic idea is that the importance weight aware methods do not ultimately change the direction of the gradient. They just make sure that the updates for large importance weights satisfy the invariance property and that they do not lineary scatter away. 
+
+\begin{lstlisting}[language=c++]
+struct norm_data
+{
+  float grad_squared;
+  float pred_per_update;
+  float norm_x;
+  power_data pd;
+  float extra_state[4];
+};
+
+float compute_update(gd& g, example& ec) {
+    float pred_per_update = sensitivity<sqrt_rate, feature_mask_off, adaptive, normalized, spare, false>(g, ec);
+    float update_scale = get_scale<adaptive>(g, ec, ec.weight);
+    if(invariant)
+      update = all.loss->getUpdate(ec.pred.scalar, ld.label, update_scale, pred_per_update);
+}
+
+float get_scale(gd& g, example& /* ec */, float weight)
+{
+  float update_scale = g.all->eta * weight;
+}
+// For squared loss.
+float getUpdate(float prediction, float label, float update_scale, float pred_per_update)
+  {
+    return (label - prediction) * (1.f - correctedExp(-2.f * update_scale * pred_per_update)) / pred_per_update;
+  }
+\end{lstlisting}
+
+\section{How to benchmark contextual bandits}
+\href{https://github.com/VowpalWabbit/coba}{COBA}
+
+\href{https://arxiv.org/pdf/1802.04064v3.pdf}{Bakeoff paper}
+
+\href{https://github.com/albietz/cb_bakeoff}{CB Bakeoff}
+
+\subsection{Example of benchmarking REGCB and SquareCB}
+\url{https://github.com/VowpalWabbit/vowpal_wabbit/wiki/Contextual-Bandit-Exploration-with-SquareCB}
+\url{https://arxiv.org/pdf/1803.01088.pdf}
+
+\url{http://proceedings.mlr.press/v119/foster20a/foster20a.pdf}
+
+\url{https://arxiv.org/pdf/2003.12699.pdf}
+
+
+\section{How to modify VW?}
+VW is written in CPP and it is written using a some common idioms with performance in mind. Things like shared pointers, destructors and move constructors, adn the boost library are heavily used.
+
+
+\subsection{Common coding patterns in VW}
+TODO
+
+\subsubsection{How does the reduction stack work?}
+Stack of reductions for every vw run is defined by 2 things: 1) DAG of dependencies that are defined in setup function for every reduction. E.g.  if we have cb\_explore\_adf reduction included, we also include cb\_adf one \href{https://github.com/VowpalWabbit/vowpal_wabbit/blob/b8732ffec3f8c7150dace1c41434bf3cdb4d8436/vowpalwabbit/cb_explore_adf_greedy.cc#L96}{link}. 2) Topological ordering of the DAG of all reductions defined \href{https://github.com/VowpalWabbit/vowpal_wabbit/blob/b8732ffec3f8c7150dace1c41434bf3cdb4d8436/vowpalwabbit/parse_args.cc#L1246}{here}, so the final stack of reduction for each VW run is actually sub-stack of 2) that contains a) reductions provided in the command line, b) reductions defined in input model file (if any), c) reductions populated as dependencies. 
+
+all setup functions of all "reductions" call into setup\_base themselves (with the exception of the reductions that are base reductions, i.e. they know they should be the last one on the stack, like gd and ftrl). So if you browse around on most setup functions you should see a call into setup\_base and then that result gets used to construct the next learner layer. 
+
+\begin{verbatim}
+    vw -d debug.txt --foreground --ccb_explore_adf \
+      --cb_type mtr --epsilon 0.01 --ftrl -f debug.model
+    
+    [Total Enabled reductions]
+    ftrl, scorer, csoaa_ldf, cb_adf, cb_explore_adf_greedy,\
+      cb_sample, shared_feature_merger, ccb_explore_adf
+    
+    [Provided explicitly]
+    ccb_explore_adf, ftrl
+    
+    [Dependencies]
+    ccb_explore_adf -> cb_sample
+    ccb_explore_adf -> cb_explore_adf_greedy -> \
+       cb_adf -> csoaa_ldf
+\end{verbatim}
+
+Files
+
+\href{https://github.com/VowpalWabbit/vowpal_wabbit/blob/27a60b36e236bd72845b69bc8dfa0646974bbbd1/vowpalwabbit/conditional_contextual_bandit.cc}{ccb\_explore\_adf}
+
+\subsection{Illustrative PRs}
+
+\section{How are the policies in VW parameterized?}
+From the Section 2, paragraph on parameterization  in the Bakeoff arxiv version \url{https://arxiv.org/pdf/1802.04064.pdf}
+
+We consider linearly parameterized policies taking the form $\pi(x) = \arg\min_a \theta_a^T x$ or in the case of IWR reduction, regressors $f(x,a) = \theta_a^Tx$. For DR loss estimator, the loss estimators is also linear, and this can be extended to more complex action dependent features for different actions. in which case the parameterization is of the form $f(x,a) = \theta^T x_a, \hat{l}(x,a) = \phi^T x_a$.
+We consider linearly parameterized policies 
+\end{document}
