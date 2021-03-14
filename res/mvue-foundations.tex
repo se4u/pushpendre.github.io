@@ -1,0 +1,105 @@
+\documentclass[preview,border={30 30 30 30}]{standalone}
+\usepackage{amsfonts,amsmath,amssymb,amsthm,graphicx,url,listings}
+\usepackage{xcolor}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+% ------ MACROS -------- %
+\usepackage{algorithmic}
+\newcommand{\myalg}[1]{\fbox{\parbox{\linewidth}{\begin{algorithmic}#1\end{algorithmic}}}}
+\newcommand{\detour}[1]{\myalg{\STATE \textsc{Detour}\\\hrulefill 
+\STATE #1}}
+
+\newcommand{\ta}{\theta}
+\newcommand{\h}{\hat{\theta}}
+\newcommand{\cD}{\mathcal{D}}
+\newcommand{\mycol}[1]{\multicolumn{2}{c}{\textbf{#1}}}
+\usepackage{hyperref} 
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+\begin{document}
+\parskip=5pt plus 1pt
+\begin{center}
+    \Large Foundations of the MVUE algorithm
+\end{center}
+Pushpendre Rastogi\\
+v1: 13 Mar 2021\\
+last update: \today\\
+Inspiration: The concepts used in these notes were inspired from Prof. Charles Elkan's notes for CSE291 (2005) available at \url{http://cseweb.ucsd.edu/~elkan/291winter2005/lect0[2-6].pdf}
+%% \tableofcontents
+\section{How do we measure how good is a parameter estimate?}
+We assume that data is generated from $p_\ta$. Given this assumption we want to estimate either $\ta$ itself or some function of $\ta$, like $g(\ta)$. An estimator $\mathrm{E}$ for $g(\ta)$ in general is a function/algorithm that maps a dataset $\cD$ to a value that is "close" to $g(\ta)$. The actual value of $\mathrm{E}(\cD) \triangleq \hat{g}$ is obviously a random variable and there are different criteria for analysing the quality of $\mathrm{E}$. For example, one way of quantifying the quality of $\mathrm{E}$ is through its \textbf{Mean-Squared-Error (MSE)} under the assumed distribution, i.e. $\mathbb{E}[(\hat{g}(\cD) - g(t))^2]$. Another criterion is called unbiasedness that $\mathbb{E}[(\hat{g}(\cD)] = g(t)$ and a third one is consistency that as the dataset size increases the estimator's bias goes to zero -- As $|\cD| \rightarrow \infty$ then $\mathbb{E}[(\hat{g}(\cD)] \rightarrow g(t)$. This is a property of \textit{eventual} unbiasedness, a.k.a. an asymptotic property. 
+
+Another important direction for quantifying the quality of an estimator is by quantifying the \textbf{variance of an estimator} for a given sample size, or equivalently by giving \textbf{high probability bounds on the deviation} of the estimator from the true quantity. These are typically finite sample bounds.
+
+Another type of description is of the asymptotic distribution followed by the deviation between the estimator and the true quantity. These types of descriptions are given by the central limit theorems.
+
+
+\section{Sufficient Partitions and their Sufficient Statistics}
+A statistic is called sufficient if it preserved all information from $x$ that is relevant for estimating which distribution $P_\theta$ generated $x$. 
+
+In order to understand the concept of sufficient statistics we need to think about sufficient statistics. That's the key and then basically a sufficient statistic just becomes the indicator of the partition that a sample falls into. 
+
+Let's say we have a sample space of our dataset. For example, if we toss a coin $n$ times then $\{0, 1\}^n$ is the sample space. This can be partitioned into a few sets, e.g. the dataset of $n$ coin tosses can be partitioned into $n+1$ sets according to whether the number of $1$'s was $0$, or $1$, or $2$, ..., or $n$.  Now this partition is "sufficient" if the likelihood of different parameters is the same within a set of the partition for all sets in the partition. 
+
+More formally, for a given partition, i.e. a set of sets that covers the sample space, $\{A\}$ if for every $A$, $P_\theta(x | x \in A) = P_{\theta'}(x | x \in A)$ for all $\theta, \theta'$ then $\{A\}$ is called a sufficient partition.
+
+The punch line is that if the level-sets (the contours) of a function induce a sufficient partition then that function of the data is a sufficient statistic.
+
+\paragraph{Alternative characterization} An alternative way of describing a sufficient statistic is that $t$ is a sufficient statistic wrt to the family of distributions $\{p_\theta\}$ if the conditional pdf $P(\cD | t(\cD) = \text{ some value})$ is invariant with $\theta$.
+
+\section{The Rao Blackwell Theorem}
+The RBT says the following
+
+\myalg{
+\STATE \textbf{Rao-Blackwell Theorem}\\\hrulefill
+\STATE Let $\{P_\theta\}$ be a family of distributions on a sample space $X$. Suppose $\tilde{g}(\cD)$ be an unbiased estimator of $g(\ta)$. Let $t(\cD)$ be a sufficient statistic. Let $\cD$ be give and let $t_0 = t(\cD)$. 
+\STATE Then $\hat{g}(\cD) = \mathbb{E}_{\mathcal{D'}}[\tilde{g}(\cD') \mid t(\cD') = t_0]$ has three properties:
+\STATE 1. $\hat{g}$ is a function of only the dataset $\cD$.
+\STATE 2. $\hat{g}$ is unbiased.
+\STATE 3. $\hat{g}$ has lower variance than $\tilde{g}$.
+}
+\section{The MVUE Algorithm}
+The algorithm to obtain a MVUE has four steps
+\begin{enumerate}
+    \item Find a sufficient statistic $t$, given $\Theta$ and the sample space $\mathcal{X}$ and the dataset $\cD \in \mathcal{X}$. 
+    \item Show that the family of distributions of $t$ is complete.
+    \item Find a crude unbiased estimator $\tilde{g}(\cD)$
+    \item Evaluate $\hat{g}(t(x)) = \mathbb{E}_\theta[\tilde{g}(\cD') \mid t(\cD') = t(\cD)]$
+\end{enumerate}
+
+\myalg{
+\STATE \textbf{Factorization theorem}: A trick for identifying sufficient statistics\\\hrulefill
+\STATE A statistic $t$ is sufficient for a family of distributions $P_\theta$ iff. we can write $P_\theta(\cD) = f(\theta, t(\cD)) h(\cD)$.
+\STATE Often a dataset $\cD$ is collected from iid observations therefore $P_\theta(\cD) = \prod P_\theta(x)$, therefore if $P_\theta(x) = f(\theta, t(x)) h(x)$ then the above requirement is also satisfied.
+}
+
+\myalg{
+\STATE What is a \textbf{complete} family of distributions?
+\STATE A family of distributions ${\Theta}$ is complete if  $\mathbb{E}_\theta[f(y)] = 0 \ \forall \theta \in \Theta \implies f = 0\ a.e.$. In other words  $\Theta$ is big enough that if $f \ne 0\ a.e.$ then there exists some $\theta \in \Theta$ that $\mathbb{E}_\theta[f(y)] \ne 0$.
+}
+\end{document}
